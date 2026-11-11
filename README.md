@@ -27,6 +27,12 @@ The application code (`client/`, `server/src/`, `server/prisma/`) is not include
 
 The guides are in English. The TA team wrote them during their own rehearsal. Values such as `YOUR_PROJECT_ID`, `YOUR_PROJECT_NUMBER`, and `YOUR_ORG/YOUR_REPO` are placeholders for your own. Commit SHAs and revision names in the guides are examples from the rehearsal.
 
+## Local database (this project)
+
+PostgreSQL 16 runs via `docker compose --env-file server/.env up -d db`. The `db` service publishes **host port 5433** (`5433:5432`) because a local PostgreSQL Windows service may already own 5432, so `DATABASE_URL` and `DATABASE_URL_TEST` in `server/.env` must use `localhost:5433`. On first start, `db/init/01-create-test-db.sh` creates the separate `<POSTGRES_DB>_test` database used only by tests.
+
+The API listens on `PORT` (default `8080`); on this machine port 8080 is already taken by other tooling, so local runs and the E2E suite use `PORT=8081`, and the Vite dev proxy targets `http://localhost:8081`.
+
 ## Order of work
 
 0. Follow the Lab 5 Student Guide (the episode series from the TA team). This folder is the material it points to.

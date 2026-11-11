@@ -85,7 +85,7 @@ Primary-key type (integer or UUID) is a stack decision. Rating scale is fixed 1â
 
 * Migrations are versioned, forward-only and additive. Each feature adds its own migration (F-01: users, sessions; F-02: surveys, questions, question_options; F-04: responses, answers).
 * Commands (names finalised with the stack): `db:migrate`, `db:seed`, `db:reset` (dev/test only).
-* Local DB: `docker compose --env-file server/.env up -d db`; `db/init/01-create-test-db.sh` creates the separate `<POSTGRES_DB>_test` database on first start; tests run only against `DATABASE_URL_TEST` and refuse to run if it is missing or equals `DATABASE_URL`.
+* Local DB: `docker compose --env-file server/.env up -d db`; the container listens on host port **5433** (`5433:5432`, because a local PostgreSQL service may already own 5432), so `DATABASE_URL` / `DATABASE_URL_TEST` use `localhost:5433`; `db/init/01-create-test-db.sh` creates the separate `<POSTGRES_DB>_test` database on first start; tests run only against `DATABASE_URL_TEST` and refuse to run if it is missing or equals `DATABASE_URL`.
 * Seed is idempotent and synthetic:
 
 | Seed item | Detail |
