@@ -1,70 +1,71 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: toktickit-db
+    container_name: feedbackloop-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-toktickit}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-toktickit}
-      POSTGRES_DB: ${POSTGRES_DB:-toktickit}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toktickit} -d ${POSTGRES_DB:-toktickit}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?set in .env} -d ${POSTGRES_DB:?set in .env}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  migrate:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: toktickit-migrate
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-toktickit}:${POSTGRES_PASSWORD:-toktickit}@db:5432/${POSTGRES_DB:-toktickit}?schema=public
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminInitial123!}
-      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-DemoInitial123!}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
-    command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
-
-  server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: toktickit-server
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-    environment:
-      NODE_ENV: production
-      TZ: Asia/Bangkok
-      PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-toktickit}:${POSTGRES_PASSWORD:-toktickit}@db:5432/${POSTGRES_DB:-toktickit}?schema=public
-    ports:
-      - "3000:3000"
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ""
-    container_name: toktickit-client
-    restart: unless-stopped
-    depends_on:
-      - server
-    ports:
-      - "5173:80"
+# TODO Lab 5: re-enable migrate/server/client once F-01 is implemented.
+#
+#   migrate:
+#     build:
+#       context: ./server
+#       dockerfile: Dockerfile
+#     container_name: feedbackloop-migrate
+#     restart: "no"
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     environment:
+#       NODE_ENV: ${NODE_ENV:-production}
+#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+#       SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
+#     command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
+#
+#   server:
+#     build:
+#       context: ./server
+#       dockerfile: Dockerfile
+#     container_name: feedbackloop-server
+#     restart: unless-stopped
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#       migrate:
+#         condition: service_completed_successfully
+#     environment:
+#       NODE_ENV: production
+#       TZ: Asia/Bangkok
+#       PORT: 3000
+#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+#     ports:
+#       - "3000:3000"
+#
+#   client:
+#     build:
+#       context: ./client
+#       dockerfile: Dockerfile
+#       args:
+#         VITE_API_URL: ""
+#     container_name: feedbackloop-client
+#     restart: unless-stopped
+#     depends_on:
+#       - server
+#     ports:
+#       - "5173:80"
 
 volumes:
   postgres_data:

@@ -1,23 +1,23 @@
 # System-Level Software Design Specification (SDS)
 
-Version v0.1 – 2026-11-10. Stack-neutral design: fill the `⟨TBD⟩` fields in §2 once Q-01 (stack) is resolved. Nothing else in this document depends on the stack.
+Version v0.2 – 2026-11-11. Stack recorded in §2 (Q-01 resolved); everything else unchanged.
 
 ## 1. Overview
 
 FeedbackLoop is a modular monolith: a web UI, an HTTP/JSON API with an application/domain layer, and a relational database. All business rules live in the domain layer and are backed by database constraints.
 
-## 2. Technology stack (to be recorded before F-01 starts)
+## 2. Technology stack (recorded; Q-01 resolved)
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Language/runtime | ⟨TBD⟩ | |
-| UI | ⟨TBD⟩ (SPA or server-rendered) | |
-| API framework | ⟨TBD⟩ | |
-| ORM / migration tool | ⟨TBD⟩ | |
-| Database | ⟨TBD, relational with unique constraints + transactions; PostgreSQL recommended for GCP Cloud SQL⟩ | |
-| Password hashing library | ⟨TBD, argon2id or bcrypt⟩ | |
-| Unit / API tests | ⟨TBD⟩ | |
-| E2E tests | ⟨TBD⟩ | |
+| Language/runtime | Node.js | Starter-kit runtime; one language across API, UI and tests |
+| UI | React + Vite (SPA) | Starter-kit UI; fast dev server, simple build into one static image |
+| API framework | Express | Minimal HTTP layer; easy middleware for auth, validation and error mapping |
+| ORM / migration tool | Prisma (migrations + ORM) | Versioned forward-only migrations, typed queries, CLI migrate/seed |
+| Database | PostgreSQL 16 | Unique/check/FK constraints and transactions; matches Cloud SQL plan |
+| Password hashing library | bcryptjs (cost 10, pure JS) | No native build step; per-password salt; meets cost ≥ 10 rule |
+| Unit / API tests | Vitest + Supertest | Fast runner shared with Vite tooling; Supertest drives the real Express app |
+| E2E tests | Playwright | Real browser journeys through UI → API → DB |
 
 **Stack requirements** (any stack must satisfy): server-side sessions with HttpOnly cookies; DB transactions; DB unique/check/foreign-key constraints; a way to run migrations and seed from the command line; a test runner that can start the API against a test database; configuration from environment variables; buildable into one container image.
 
@@ -85,6 +85,7 @@ Primary-key type (integer or UUID) is a stack decision. Rating scale is fixed 1�
 
 * Migrations are versioned, forward-only and additive. Each feature adds its own migration (F-01: users, sessions; F-02: surveys, questions, question_options; F-04: responses, answers).
 * Commands (names finalised with the stack): `db:migrate`, `db:seed`, `db:reset` (dev/test only).
+* Local DB: `docker compose --env-file server/.env up -d db`; the container listens on host port **5433** (`5433:5432`, because a local PostgreSQL service may already own 5432), so `DATABASE_URL` / `DATABASE_URL_TEST` use `localhost:5433`; `db/init/01-create-test-db.sh` creates the separate `<POSTGRES_DB>_test` database on first start; tests run only against `DATABASE_URL_TEST` and refuse to run if it is missing or equals `DATABASE_URL`.
 * Seed is idempotent and synthetic:
 
 | Seed item | Detail |
@@ -185,13 +186,17 @@ Primary-key type (integer or UUID) is a stack decision. Rating scale is fixed 1�
 |---|---|---|---|
 | `APP_ENV` | no | `development` / `test` / `production` | `development` |
 | `PORT` | no | HTTP port | `8080` |
-| `DATABASE_URL` | **yes** | DB connection string | `<set locally / Secret Manager>` |
+| `LOG_LEVEL` | no | logging verbosity | `info` |
+| `APP_VERSION` | no | commit SHA exposed by `/api/health` | `dev` (set at build) |
+| `CORS_ALLOWED_ORIGINS` | no | allowed UI origin(s) if UI is served separately | `http://localhost:5173` |
 | `SESSION_TTL_MINUTES` | no | session lifetime | `60` |
 | `COOKIE_SECURE` | no | set `true` behind HTTPS | `false` locally |
+| `POSTGRES_USER` | no | local DB superuser (docker compose) | `feedbackloop` |
+| `POSTGRES_PASSWORD` | **yes** | local DB password (docker compose) | `<set locally>` |
+| `POSTGRES_DB` | no | local database name (test DB = `<POSTGRES_DB>_test`) | `feedbackloop` |
+| `DATABASE_URL` | **yes** | app DB connection string | `<set locally / Secret Manager>` |
+| `DATABASE_URL_TEST` | **yes** | test DB connection string; tests refuse to run if missing or equal to `DATABASE_URL` | `<set locally>` |
 | `SEED_PASSWORD` | **yes** | password for seeded demo users (local/test) | `<shared privately>` |
-| `CORS_ALLOWED_ORIGINS` | no | allowed UI origin(s) if UI is served separately | `http://localhost:5173` |
-| `LOG_LEVEL` | no | logging verbosity | `info` |
-| `APP_VERSION` | no | commit SHA exposed by `/api/health` | set at build |
 
 Rules: all settings come from the environment; `.env` is git-ignored; `.env.example` has placeholders only; no real secrets in Git, images, logs or PDFs.
 
@@ -231,3 +236,4 @@ TDD for BR-01, BR-02, BR-03, BR-06 and the authorization rules: commit failing t
 | Version | Date | Author | Change |
 |---|---|---|---|
 | v0.1 | 2026-11-10 | `<A>`, `<B>` | Initial baseline |
+| v0.2 | 2026-11-11 | `<A>`, `<B>` | Added POSTGRES_* and DATABASE_URL_TEST to §9; documented local DB and test database setup (F-01, Issue #02) |
