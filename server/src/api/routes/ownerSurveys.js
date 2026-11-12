@@ -25,11 +25,12 @@ ownerSurveysRouter.get(
 ownerSurveysRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const surveyId = parseInt(req.params.id, 10);
-    if (isNaN(surveyId)) {
+    if (!/^\d+$/.test(req.params.id)) {
       res.status(404).json(errorBody('NOT_FOUND', 'Survey not found'));
       return;
     }
+
+    const surveyId = parseInt(req.params.id, 10);
 
     const survey = await findSurveyById(prisma, surveyId);
     if (!survey) {
@@ -65,3 +66,4 @@ ownerSurveysRouter.post(
     res.status(201).json({ survey });
   }),
 );
+

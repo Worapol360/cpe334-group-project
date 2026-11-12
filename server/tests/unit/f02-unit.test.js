@@ -122,10 +122,10 @@ describe('F-02 Survey Creation Unit Tests (BR-05 Validation)', () => {
     );
   });
 
-  it('TC-F02-07: rejects rating with options and rejects unknown question type', () => {
-    // rating with options
+  it('TC-F02-07: rejects rating with options (array or non-array) and rejects unknown question type', () => {
+    // rating with options array
     const ratingWithOptions = {
-      text: 'Rating with options',
+      text: 'Rating with options array',
       type: 'rating',
       options: ['1', '2', '3'],
     };
@@ -135,6 +135,21 @@ describe('F-02 Survey Creation Unit Tests (BR-05 Validation)', () => {
     });
     expect(resRating.valid).toBe(false);
     expect(resRating.fields).toContainEqual(
+      expect.objectContaining({ field: 'questions[0].options' }),
+    );
+
+    // rating with non-array options (e.g. string "abc" or object)
+    const ratingWithStrOptions = {
+      text: 'Rating with string options',
+      type: 'rating',
+      options: 'abc',
+    };
+    const resRatingStr = validateSurveyInput({
+      ...baseValidSurvey,
+      questions: [ratingWithStrOptions],
+    });
+    expect(resRatingStr.valid).toBe(false);
+    expect(resRatingStr.fields).toContainEqual(
       expect.objectContaining({ field: 'questions[0].options' }),
     );
 
@@ -153,3 +168,4 @@ describe('F-02 Survey Creation Unit Tests (BR-05 Validation)', () => {
     );
   });
 });
+

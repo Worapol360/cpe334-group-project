@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { prisma, resetAndSeed } from '../harness/db.js';
 import { createApp } from '../../src/app.js';
@@ -37,6 +37,10 @@ const sampleSurveyBody = {
 
 beforeEach(async () => {
   await resetAndSeed();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 afterAll(async () => {
@@ -256,7 +260,17 @@ describe('F-02 Survey Creation API Tests', () => {
 
     expect(finalSurveys).toBe(initialSurveys);
     expect(finalQuestions).toBe(initialQuestions);
+  });
 
-    vi.restoreAllMocks();
+  it('TC-F02-02 (edge case): non-numeric or alphanumeric ID like 12abc returns 404 NOT_FOUND', async () => {
+    const cookie = await loginUser(OWNER1);
+
+    const res = await request(app)
+      .get('/api/owner/surveys/12abc')
+      .set('Cookie', cookie);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
   });
 });
+

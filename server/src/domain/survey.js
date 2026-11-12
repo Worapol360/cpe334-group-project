@@ -146,11 +146,13 @@ export function validateSurveyInput(body) {
           });
         }
       } else if (q.type === 'rating') {
-        if (q.options && Array.isArray(q.options) && q.options.length > 0) {
-          fields.push({
-            field: `${qPrefix}.options`,
-            message: 'Rating questions cannot have options',
-          });
+        if (q.options !== undefined && q.options !== null) {
+          if (!Array.isArray(q.options) || q.options.length > 0) {
+            fields.push({
+              field: `${qPrefix}.options`,
+              message: 'Rating questions cannot have options',
+            });
+          }
         }
       }
 

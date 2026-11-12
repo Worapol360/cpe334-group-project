@@ -130,9 +130,10 @@ Product DoD plus: all TC-F02-* executed with output kept; TC-F02-03..07 and 09 w
 ### Completion evidence
 | Item | Value |
 |---|---|
-| Failing-test commit | `99fb6a1` |
+| Failing-test commit | `99fb6a1` (TC-F02-03..07 unit tests written failing first) |
 | Implementation commit | `681f435` |
-| Test command / result / counts | `npm run test:unit` (2 files, 7 passed) |
+| Test command / result / counts | Unit: `npm run test:unit` (5 passed for F-02, 100%)<br>API: `npm run test:api` (9 passed for F-02, 100%)<br>Total F-02 automated tests: 14 passed |
+| TDD & Rollback verification | 1. **TC-F02-09 Exception Note:** API integration tests were committed alongside Express routes in `681f435`; verified that omitting the ownership guard in `ownerSurveys.js` returns HTTP 200, causing TC-F02-09 to fail, whereas with guard it returns HTTP 403 with zero survey fields.<br>2. **TC-F02-12 Rollback:** Verified that removing the `prisma.$transaction` wrapper leaves an orphaned survey row on 2nd question failure, failing the test; with transaction, zero rows remain.<br>3. **TC-F02-13, 14 (UI E2E):** Manual verification on client UI passed (empty, loading, validation error and create flow); cross-feature automated E2E consolidated under TEST-01 (Issue #7). |
 | PR link, reviewer, review note | Pending review by Student A (Worapol360) |
 
 ### Revision history
