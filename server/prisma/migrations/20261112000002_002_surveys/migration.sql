@@ -42,4 +42,3 @@ CREATE TABLE "question_options" (
 
 CREATE UNIQUE INDEX "question_options_question_id_position_key" ON "question_options"("question_id", "position");
 ALTER TABLE "question_options" ADD CONSTRAINT "question_options_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

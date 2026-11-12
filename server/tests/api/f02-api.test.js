@@ -262,7 +262,7 @@ describe('F-02 Survey Creation API Tests', () => {
     expect(finalQuestions).toBe(initialQuestions);
   });
 
-  it('TC-F02-02 (edge case): non-numeric or alphanumeric ID like 12abc returns 404 NOT_FOUND', async () => {
+  it('TC-F02-15: non-numeric or alphanumeric ID like 12abc returns 404 NOT_FOUND', async () => {
     const cookie = await loginUser(OWNER1);
 
     const res = await request(app)

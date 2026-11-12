@@ -88,7 +88,7 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F02-03 | TC-F02-04 | `tests/unit/f02-unit.test.js`: TC-F02-04 | Pass |
 | AC-F02-04 | TC-F02-05, 06 | `tests/unit/f02-unit.test.js`: TC-F02-05, TC-F02-06 | Pass |
 | AC-F02-05 | TC-F02-07 | `tests/unit/f02-unit.test.js`: TC-F02-07 | Pass |
-| AC-F02-06 | TC-F02-08, 09 | `tests/api/f02-api.test.js`: TC-F02-08, TC-F02-09 | Pass |
+| AC-F02-06 | TC-F02-08, 09, 15 | `tests/api/f02-api.test.js`: TC-F02-08, TC-F02-09, TC-F02-15 | Pass |
 | AC-F02-07 | TC-F02-10 | `tests/api/f02-api.test.js`: TC-F02-10 | Pass |
 | AC-F02-08 | TC-F02-11 | `tests/api/f02-api.test.js`: TC-F02-11 | Pass |
 | AC-F02-09 | TC-F02-13, 14 | Manual verification in client UI (`/owner/surveys/new`, `/owner/surveys`, `/owner/surveys/:id`); automated E2E consolidated under TEST-01 (Issue #7) | Pass (Manual) |
@@ -195,6 +195,7 @@ Each test links to its AC (`feature-specs.md`).
 | TC-F02-12 | 10 | Integration | fault injected on 2nd question insert | POST create | 500/422 safe error; zero survey/question/option rows |
 | TC-F02-13 | 09 | E2E | owner logged in | create via form; submit invalid form | detail page shows saved survey; invalid shows inline errors; list shows new row |
 | TC-F02-14 | 09 | Manual | empty owner account; throttled network; API offline | open list/forms | empty, loading and error states visible |
+| TC-F02-15 | 06 | API | owner1 session; non-numeric or alphanumeric ID "12abc" | GET detail | 404 NOT_FOUND |
 
 ### F-03 Survey Publication
 | Test | AC | Level | Precondition / input | Action | Expected |
