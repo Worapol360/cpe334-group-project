@@ -4,6 +4,7 @@ import { config } from './config.js';
 import { errorBody } from './api/errors.js';
 import { authRouter } from './api/routes/auth.js';
 import { healthRouter } from './api/routes/health.js';
+import { ownerSurveysRouter } from './api/routes/ownerSurveys.js';
 
 function cors(req, res, next) {
   const origin = req.headers.origin;
@@ -30,6 +31,7 @@ export function createApp() {
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/owner/surveys', ownerSurveysRouter);
 
   app.use((req, res) => {
     res.status(404).json(errorBody('NOT_FOUND', 'Not found'));

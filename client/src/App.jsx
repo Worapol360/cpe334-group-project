@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, homeFor, useAuth } from './auth.jsx';
 import Login from './pages/Login.jsx';
 import OwnerSurveys from './pages/OwnerSurveys.jsx';
+import CreateSurvey from './pages/CreateSurvey.jsx';
+import OwnerSurveyDetail from './pages/OwnerSurveyDetail.jsx';
 import Surveys from './pages/Surveys.jsx';
 import NotAllowed from './pages/NotAllowed.jsx';
 
@@ -39,6 +41,22 @@ export default function App() {
             element={
               <RequireAuth role="owner">
                 <OwnerSurveys />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/owner/surveys/new"
+            element={
+              <RequireAuth role="owner">
+                <CreateSurvey />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id"
+            element={
+              <RequireAuth role="owner">
+                <OwnerSurveyDetail />
               </RequireAuth>
             }
           />

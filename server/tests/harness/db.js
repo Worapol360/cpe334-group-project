@@ -34,12 +34,16 @@ execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
 });
 
 const { prisma } = await import('../../src/persistence/prisma.js');
-const { seedUsers } = await import('../../src/persistence/seed.js');
+const { seedUsers, seedSurveys } = await import('../../src/persistence/seed.js');
 
 export async function resetAndSeed() {
   await prisma.session.deleteMany();
+  await prisma.questionOption.deleteMany();
+  await prisma.question.deleteMany();
+  await prisma.survey.deleteMany();
   await prisma.user.deleteMany();
   await seedUsers(prisma);
+  await seedSurveys(prisma);
   return prisma.user.findMany({ orderBy: { id: 'asc' } });
 }
 
@@ -47,4 +51,4 @@ export async function closePrisma() {
   await prisma.$disconnect();
 }
 
-export { prisma, seedUsers };
+export { prisma, seedUsers, seedSurveys };
