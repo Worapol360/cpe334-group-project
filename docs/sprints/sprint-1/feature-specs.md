@@ -130,10 +130,10 @@ Product DoD plus: all TC-F02-* executed with output kept; TC-F02-03..07 and 09 w
 ### Completion evidence
 | Item | Value |
 |---|---|
-| Failing-test commit | |
-| Implementation commit | |
-| Test command / result / counts | |
-| PR link, reviewer, review note | |
+| Failing-test commit | `99fb6a1` |
+| Implementation commit | `681f435` |
+| Test command / result / counts | `npm run test:unit` (2 files, 7 passed) |
+| PR link, reviewer, review note | Pending review by Student A (Worapol360) |
 
 ### Revision history
 | Version | Date | Change | Reason |
