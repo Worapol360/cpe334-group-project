@@ -8,6 +8,24 @@ export default function OwnerSurveyDetail() {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState(null);
+
+  async function handlePublish() {
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const data = await api(`/api/owner/surveys/${id}/publish`, { method: 'POST' });
+      setSurvey(data?.survey || null);
+      setConfirmOpen(false);
+    } catch (err) {
+      setPublishError(err instanceof ApiError ? err.message : 'Failed to publish survey');
+      setConfirmOpen(false);
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -69,22 +87,68 @@ export default function OwnerSurveyDetail() {
                   Created on {new Date(survey.createdAt).toLocaleDateString()} · Mode: {survey.mode}
                 </span>
               </div>
-              <span
+              <div
                 style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  background:
-                    survey.status === 'published' ? '#dcfce7' : survey.status === 'closed' ? '#f3f4f6' : '#fef3c7',
-                  color:
-                    survey.status === 'published' ? '#166534' : survey.status === 'closed' ? '#4b5563' : '#92400e',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: '0.75rem',
                 }}
               >
-                {survey.status}
-              </span>
+                <span
+                  style={{
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    background:
+                      survey.status === 'published' ? '#dcfce7' : survey.status === 'closed' ? '#f3f4f6' : '#fef3c7',
+                    color:
+                      survey.status === 'published' ? '#166534' : survey.status === 'closed' ? '#4b5563' : '#92400e',
+                  }}
+                >
+                  {survey.status}
+                </span>
+                {survey.status === 'draft' && (
+                  <button
+                    type="button"
+                    data-testid="publish-button"
+                    onClick={() => {
+                      setPublishError(null);
+                      setConfirmOpen(true);
+                    }}
+                    style={{
+                      padding: '0.5rem 1.25rem',
+                      borderRadius: '4px',
+                      border: 'none',
+                      background: '#16a34a',
+                      color: '#fff',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Publish
+                  </button>
+                )}
+              </div>
             </div>
+
+            {publishError && (
+              <div
+                data-testid="publish-error"
+                role="alert"
+                style={{
+                  color: '#dc2626',
+                  background: '#fee2e2',
+                  padding: '1rem',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                }}
+              >
+                {publishError}
+              </div>
+            )}
 
             <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '1.5rem 0' }} />
 
@@ -149,6 +213,74 @@ export default function OwnerSurveyDetail() {
                 </div>
               ))}
             </div>
+
+            {confirmOpen && (
+              <div
+                role="dialog"
+                aria-modal="true"
+                data-testid="publish-confirm-dialog"
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                }}
+              >
+                <div
+                  style={{
+                    background: '#fff',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    maxWidth: '420px',
+                    width: '100%',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                  }}
+                >
+                  <h2 style={{ marginTop: 0 }}>Publish this survey?</h2>
+                  <p style={{ color: '#4b5563' }}>
+                    Once you publish, respondents will be able to see this survey and
+                    the questions cannot be changed afterwards.
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmOpen(false)}
+                      disabled={publishing}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '4px',
+                        border: '1px solid #d1d5db',
+                        background: '#fff',
+                        color: '#374151',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="publish-confirm-button"
+                      onClick={handlePublish}
+                      disabled={publishing}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '4px',
+                        border: 'none',
+                        background: '#16a34a',
+                        color: '#fff',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {publishing ? 'Publishing…' : 'Publish'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
