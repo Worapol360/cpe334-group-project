@@ -426,32 +426,22 @@ describe('F-04 Response Submission and Duplicate Prevention API Tests', () => {
     const qSingle = survey.questions.find((q) => q.type === 'single_choice');
     const qRating = survey.questions.find((q) => q.type === 'rating');
 
-    // Intercept answer creation on transaction client
+    // Intercept answer creation on real transaction client
+    const originalTransaction = prisma.$transaction.bind(prisma);
     let answerCreateCalls = 0;
-    const originalAnswerCreate = prisma.answer.create;
 
-    vi.spyOn(prisma, '$transaction').mockImplementation(async (cb) => {
-      if (typeof cb === 'function') {
-        const txProxy = new Proxy(prisma, {
-          get(target, prop) {
-            if (prop === 'answer') {
-              return {
-                ...target.answer,
-                create: async (args) => {
-                  answerCreateCalls++;
-                  if (answerCreateCalls === 2) {
-                    throw new Error('Database disk fault on second answer insert');
-                  }
-                  return target.answer.create(args);
-                },
-              };
-            }
-            return target[prop];
-          },
-        });
-        return cb(txProxy);
-      }
-      return cb;
+    vi.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+      return originalTransaction(async (tx) => {
+        const originalAnswerCreate = tx.answer.create.bind(tx);
+        tx.answer.create = async (args) => {
+          answerCreateCalls++;
+          if (answerCreateCalls === 2) {
+            throw new Error('Database disk fault on second answer insert');
+          }
+          return originalAnswerCreate(args);
+        };
+        return callback(tx);
+      });
     });
 
     const res = await request(app)

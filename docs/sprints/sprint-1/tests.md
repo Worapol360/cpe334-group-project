@@ -102,19 +102,19 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F03-07 | TC-F03-09 | | |
 | AC-F03-08 | TC-F03-10 | | |
 | AC-F03-09 | TC-F03-11 | | |
-| AC-F04-01 | TC-F04-01 | | |
-| AC-F04-02 | TC-F04-02 | | |
-| AC-F04-03 | TC-F04-03 | | |
-| AC-F04-04 | TC-F04-04 | | |
-| AC-F04-05 | TC-F04-05 | | |
-| AC-F04-06 | TC-F04-06, 07 | | |
-| AC-F04-07 | TC-F04-08 | | |
-| AC-F04-08 | TC-F04-09, 10 | | |
-| AC-F04-09 | TC-F04-11 | | |
-| AC-F04-10 | TC-F04-12, 13 | | |
-| AC-F04-11 | TC-F04-14 | | |
-| AC-F04-12 | TC-F04-15 | | |
-| AC-F04-13 | TC-F04-16, 17 | | |
+| AC-F04-01 | TC-F04-01 | `tests/api/f04-api.test.js`: TC-F04-01 | Pass |
+| AC-F04-02 | TC-F04-02 | `tests/api/f04-api.test.js`: TC-F04-02 | Pass |
+| AC-F04-03 | TC-F04-03 | `tests/api/f04-api.test.js`: TC-F04-03 | Pass |
+| AC-F04-04 | TC-F04-04 | `tests/api/f04-api.test.js`: TC-F04-04 | Pass |
+| AC-F04-05 | TC-F04-05 | `tests/api/f04-api.test.js`: TC-F04-05 | Pass |
+| AC-F04-06 | TC-F04-06, 07 | `tests/unit/f04-unit.test.js`: TC-F04-06; `tests/api/f04-api.test.js`: TC-F04-07 | Pass |
+| AC-F04-07 | TC-F04-08 | `tests/unit/f04-unit.test.js`: TC-F04-08 | Pass |
+| AC-F04-08 | TC-F04-09, 10 | `tests/unit/f04-unit.test.js`: TC-F04-09; `tests/api/f04-api.test.js`: TC-F04-10 | Pass |
+| AC-F04-09 | TC-F04-11 | `tests/api/f04-api.test.js`: TC-F04-11 | Pass |
+| AC-F04-10 | TC-F04-12, 13 | `tests/api/f04-api.test.js`: TC-F04-12, TC-F04-13 | Pass |
+| AC-F04-11 | TC-F04-14 | `tests/api/f04-api.test.js`: TC-F04-14 | Pass |
+| AC-F04-12 | TC-F04-15 | `tests/api/f04-api.test.js`: TC-F04-15 | Pass |
+| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; UI client verified (`/surveys`, `/surveys/:id`, `/responses/:id`) & `e2e/f04.spec.js` | Pass |
 | AC-F05-01 | TC-F05-01, 02 | | |
 | AC-F05-02 | TC-F05-01, 03 | | |
 | AC-F05-03 | TC-F05-01, 04 | | |
@@ -128,8 +128,8 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 
 | Rule / AC | Test | Failing commit + date | Failing output summary | Fix commit + date | Passing output summary |
 |---|---|---|---|---|---|
-| BR-01 / AC-F04-03 | TC-F04-03 | | | | |
-| Ownership / AC-F04-10 | TC-F04-12 | | | | |
+| BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `08f56cf` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
+| Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `08f56cf` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
 | BR-03 / AC-F03-02 | TC-F03-02 | | | | |
 | NFR-02 / AC-F01-06 | TC-F01-09 | | | | |
 

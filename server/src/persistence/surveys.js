@@ -88,16 +88,29 @@ export async function findSurveyById(prisma, id) {
   });
 }
 
-export async function listPublishedSurveys(prisma) {
-  return prisma.survey.findMany({
+export async function listPublishedSurveys(prisma, respondentId = null) {
+  const surveys = await prisma.survey.findMany({
     where: { status: 'published' },
     select: {
       id: true,
       title: true,
       description: true,
+      responses: respondentId
+        ? {
+            where: { respondentId },
+            select: { id: true },
+          }
+        : false,
     },
     orderBy: { createdAt: 'desc' },
   });
+
+  return surveys.map((s) => ({
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    myResponseId: s.responses && s.responses.length > 0 ? s.responses[0].id : null,
+  }));
 }
 
 export async function findPublishedSurveyById(prisma, id) {

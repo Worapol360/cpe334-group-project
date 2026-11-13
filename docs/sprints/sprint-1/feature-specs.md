@@ -277,10 +277,11 @@ Product DoD plus: TC-F04-03, 04, 05, 07, 10, 12 written failing first (TDD evide
 ### Completion evidence
 | Item | Value |
 |---|---|
-| Failing-test commit | |
-| Implementation commit | |
-| Test command / result / counts | |
-| PR link, reviewer, review note | |
+| Failing-test commit | `081a52a` (TC-F04-01..15, 17 written failing first) |
+| Implementation commit | `08f56cf` |
+| Test command / result / counts | Unit: `npm run test:unit` (3 passed for F-04, 100%)<br>API: `npm run test:api` (13 passed for F-04, 100%)<br>Total F-04 automated tests: 16 passed (51 passed across all suites) |
+| TDD & Concurrency verification | 1. **TC-F04-03 Duplicate TDD:** Failing in `081a52a` (404 missing route) → passing in implementation (409 DUPLICATE_RESPONSE).<br>2. **TC-F04-12 Ownership TDD:** Failing in `081a52a` (404 missing route) → passing in implementation (403 FORBIDDEN).<br>3. **TC-F04-04 Concurrency:** 5 parallel identical submissions tested and run 20 times without flake; DB unique constraint `(survey_id, respondent_id)` guarantees atomicity.<br>4. **TC-F04-15 Fault Injection:** Verified database rollback on second answer insert leaves zero orphaned response rows.<br>5. **TC-F04-16 UI E2E:** Verified client UI workflow (form validation, submit redirect to `/responses/:id`, answered badge, and disabled form on revisit). |
+| PR link, reviewer, review note | Pending review by Student A (Worapol360) |
 
 ### Revision history
 | Version | Date | Change | Reason |
