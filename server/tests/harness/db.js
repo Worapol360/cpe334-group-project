@@ -37,6 +37,8 @@ const { prisma } = await import('../../src/persistence/prisma.js');
 const { seedUsers, seedSurveys } = await import('../../src/persistence/seed.js');
 
 export async function resetAndSeed() {
+  await prisma.answer.deleteMany();
+  await prisma.response.deleteMany();
   await prisma.session.deleteMany();
   await prisma.questionOption.deleteMany();
   await prisma.question.deleteMany();

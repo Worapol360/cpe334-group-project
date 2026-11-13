@@ -6,6 +6,7 @@ import CreateSurvey from './pages/CreateSurvey.jsx';
 import OwnerSurveyDetail from './pages/OwnerSurveyDetail.jsx';
 import Surveys from './pages/Surveys.jsx';
 import SurveyDetail from './pages/SurveyDetail.jsx';
+import ResponseDetail from './pages/ResponseDetail.jsx';
 import NotAllowed from './pages/NotAllowed.jsx';
 
 function Loading() {
@@ -74,6 +75,14 @@ export default function App() {
             element={
               <RequireAuth role="respondent">
                 <SurveyDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/responses/:id"
+            element={
+              <RequireAuth role="respondent">
+                <ResponseDetail />
               </RequireAuth>
             }
           />

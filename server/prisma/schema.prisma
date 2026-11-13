@@ -16,6 +16,7 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   sessions     Session[]
   surveys      Survey[]
+  responses    Response[]
 
   @@map("users")
 }
@@ -44,6 +45,7 @@ model Survey {
   publishedAt DateTime?  @map("published_at")
   owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   questions   Question[]
+  responses   Response[]
 
   @@map("surveys")
 }
@@ -56,6 +58,7 @@ model Question {
   type     String
   survey   Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   options  QuestionOption[]
+  answers  Answer[]
 
   @@unique([surveyId, position])
   @@map("questions")
@@ -67,7 +70,35 @@ model QuestionOption {
   position   Int
   label      String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    Answer[]
 
   @@unique([questionId, position])
   @@map("question_options")
+}
+
+model Response {
+  id           Int      @id @default(autoincrement())
+  surveyId     Int      @map("survey_id")
+  respondentId Int      @map("respondent_id")
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+  survey       Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  respondent   User     @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  answers      Answer[]
+
+  @@unique([surveyId, respondentId])
+  @@map("responses")
+}
+
+model Answer {
+  id          Int             @id @default(autoincrement())
+  responseId  Int             @map("response_id")
+  questionId  Int             @map("question_id")
+  optionId    Int?            @map("option_id")
+  ratingValue Int?            @map("rating_value")
+  response    Response        @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question    Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option      QuestionOption? @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, questionId])
+  @@map("answers")
 }

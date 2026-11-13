@@ -277,10 +277,135 @@ Product DoD plus: TC-F04-03, 04, 05, 07, 10, 12 written failing first (TDD evide
 ### Completion evidence
 | Item | Value |
 |---|---|
-| Failing-test commit | |
-| Implementation commit | |
-| Test command / result / counts | |
-| PR link, reviewer, review note | |
+| Failing-test commit | `081a52a` (TC-F04-01..15, 17 written failing first) |
+| Implementation commit | `fe2835e` (review fixes in `423914c` and follow-up) |
+| Test command / result / counts | Unit: `npm run test:unit` (3 passed for F-04, 100%)<br>API: `npm run test:api` (13 passed for F-04, 100%)<br>E2E: `cd e2e && npx playwright test f04` (1 passed, 10.2s)<br>Total F-04 automated tests: 17 passed (51 passed across full API suite) |
+| PR link, reviewer, review note | Pending review by Student A (Worapol360) |
+
+#### DoD Verification & Test Outputs
+
+##### 1. Concurrency (TC-F04-04 20-run loop without flake)
+Command:
+```powershell
+1..20 | ForEach-Object { $i = $_; npx vitest run tests/api/f04-api.test.js -t "TC-F04-04" > $null 2>&1; if ($LASTEXITCODE -eq 0) { Write-Host "Run $i/20: PASSED" } else { Write-Host "Run $i/20: FAILED"; break } }
+```
+Output:
+```text
+Run 1/20: PASSED
+Run 2/20: PASSED
+Run 3/20: PASSED
+Run 4/20: PASSED
+Run 5/20: PASSED
+Run 6/20: PASSED
+Run 7/20: PASSED
+Run 8/20: PASSED
+Run 9/20: PASSED
+Run 10/20: PASSED
+Run 11/20: PASSED
+Run 12/20: PASSED
+Run 13/20: PASSED
+Run 14/20: PASSED
+Run 15/20: PASSED
+Run 16/20: PASSED
+Run 17/20: PASSED
+Run 18/20: PASSED
+Run 19/20: PASSED
+Run 20/20: PASSED
+```
+
+##### 2. Duplicate Guard via Database Constraint Experiment (Pre-check Removed)
+Experiment: Commented out `findResponseBySurveyAndRespondent` pre-check in `server/src/api/routes/surveys.js` and executed 5 concurrent requests.
+Command:
+```powershell
+npx vitest run tests/api/f04-api.test.js -t "TC-F04-04"
+```
+Output:
+```text
+ RUN  v5.1.0 C:/Users/lenovo/Documents/cpe334-group-project/server
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "feedbackloop_test", schema "public" at "localhost:5433"
+
+3 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+stderr | tests/api/f04-api.test.js
+◇ injected env (13) from .env
+
+stderr | tests/api/f04-api.test.js
+◇ injected env (0) from .env
+
+ ✓ tests/api/f04-api.test.js (13 tests | 12 skipped) 399ms
+   ✓ F-04 Response Submission and Duplicate Prevention API Tests (13)
+     ✓ TC-F04-04: 5 parallel identical submissions -> exactly one 201, four 409; count = 1 393ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 12 skipped (13)
+   Start at  00:25:47
+   Duration  2.06s (import 74%, tests 21%, transform 4%)
+```
+Result: Verified that the PostgreSQL `UNIQUE(survey_id, respondent_id)` constraint catches concurrent submissions, throws Prisma P2002 error, and is handled as `DuplicateResponseError` (409), proving the DB constraint acts as the concurrency safety gate.
+
+##### 3. Fault Injection Transaction Rollback (TC-F04-15)
+Command:
+```powershell
+npx vitest run tests/api/f04-api.test.js -t "TC-F04-15"
+```
+Output:
+```text
+ RUN  v5.1.0 C:/Users/lenovo/Documents/cpe334-group-project/server
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "feedbackloop_test", schema "public" at "localhost:5433"
+
+3 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+stderr | tests/api/f04-api.test.js
+◇ injected env (13) from .env
+
+stderr | tests/api/f04-api.test.js
+◇ injected env (0) from .env
+
+stderr | tests/api/f04-api.test.js > F-04 Response Submission and Duplicate Prevention API Tests > TC-F04-15: fault injected on 2nd answer insert -> safe error; zero response rows
+Error: Database disk fault on second answer insert
+    at Proxy.tx.answer.create (C:/Users/lenovo/Documents/cpe334-group-project/server/tests/api/f04-api.test.js:439:19)
+    at C:/Users/lenovo/Documents/cpe334-group-project/server/src/persistence/responses.js:29:25
+    at async Proxy._transactionWithCallback (C:\Users\lenovo\Documents\cpe334-group-project\server\node_modules\@prisma\client\runtime\library.js:130:8120)
+
+ ✓ tests/api/f04-api.test.js (13 tests | 12 skipped) 346ms
+   ✓ F-04 Response Submission and Duplicate Prevention API Tests (13)
+     ✓ TC-F04-15: fault injected on 2nd answer insert -> safe error; zero response rows 343ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 12 skipped (13)
+   Start at  00:05:14
+   Duration  1.88s (import 76%, tests 20%, transform 4%)
+```
+
+##### 4. E2E UI Flow (TC-F04-16)
+Command:
+```powershell
+cd e2e; npx playwright test f04
+```
+Output:
+```text
+Running 1 test using 1 worker
+
+  ok 1 f04.spec.js:7:1 › TC-F04-16: respondent answers published survey, submits incomplete, sees confirmation, and form is disabled on revisit (2.1s)
+
+  1 passed (10.2s)
+```
 
 ### Revision history
 | Version | Date | Change | Reason |

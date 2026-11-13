@@ -85,12 +85,29 @@ export default function Surveys() {
                   background: '#fff',
                 }}
               >
-                <Link
-                  to={`/surveys/${survey.id}`}
-                  style={{ color: '#2563eb', fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}
-                >
-                  {survey.title}
-                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Link
+                    to={`/surveys/${survey.id}`}
+                    style={{ color: '#2563eb', fontWeight: 600, fontSize: '1.05rem', textDecoration: 'none' }}
+                  >
+                    {survey.title}
+                  </Link>
+                  {survey.myResponseId && (
+                    <span
+                      data-testid="answered-badge"
+                      style={{
+                        background: '#dcfce7',
+                        color: '#166534',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Answered ✔
+                    </span>
+                  )}
+                </div>
                 {survey.description && (
                   <p style={{ color: '#4b5563', margin: '0.5rem 0 0 0' }}>{survey.description}</p>
                 )}
