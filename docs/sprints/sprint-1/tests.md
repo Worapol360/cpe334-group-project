@@ -114,7 +114,7 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F04-10 | TC-F04-12, 13 | `tests/api/f04-api.test.js`: TC-F04-12, TC-F04-13 | Pass |
 | AC-F04-11 | TC-F04-14 | `tests/api/f04-api.test.js`: TC-F04-14 | Pass |
 | AC-F04-12 | TC-F04-15 | `tests/api/f04-api.test.js`: TC-F04-15 | Pass |
-| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; UI client verified (`/surveys`, `/surveys/:id`, `/responses/:id`) & `e2e/f04.spec.js` | Pass |
+| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; `e2e/f04.spec.js`: TC-F04-16 (playwright 1 passed, 10.2s) | Pass |
 | AC-F05-01 | TC-F05-01, 02 | | |
 | AC-F05-02 | TC-F05-01, 03 | | |
 | AC-F05-03 | TC-F05-01, 04 | | |
@@ -128,8 +128,8 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 
 | Rule / AC | Test | Failing commit + date | Failing output summary | Fix commit + date | Passing output summary |
 |---|---|---|---|---|---|
-| BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `08f56cf` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
-| Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `08f56cf` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
+| BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
+| Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
 | BR-03 / AC-F03-02 | TC-F03-02 | | | | |
 | NFR-02 / AC-F01-06 | TC-F01-09 | | | | |
 

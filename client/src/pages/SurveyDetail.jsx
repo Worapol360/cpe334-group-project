@@ -34,8 +34,10 @@ export default function SurveyDetail() {
         if (active) {
           setSurvey(surveyData?.survey || null);
 
-          // Find if this survey is already answered
-          if (Array.isArray(listData?.surveys)) {
+          // Find if this survey is already answered (from detail endpoint or list fallback)
+          if (surveyData?.survey?.myResponseId) {
+            setMyResponseId(surveyData.survey.myResponseId);
+          } else if (Array.isArray(listData?.surveys)) {
             const thisItem = listData.surveys.find((s) => s.id === Number(id));
             if (thisItem?.myResponseId) {
               setMyResponseId(thisItem.myResponseId);
@@ -138,8 +140,8 @@ export default function SurveyDetail() {
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 409 && err.code === 'DUPLICATE_RESPONSE') {
-          setSubmitError('You have already submitted a response to this survey');
+        if (err.status === 409) {
+          setSubmitError(err.message || 'You have already submitted a response to this survey (DUPLICATE_RESPONSE)');
           setMyResponseId(true);
         } else if (err.status === 422 && Array.isArray(err.fields)) {
           const serverErrors = {};

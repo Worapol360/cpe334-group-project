@@ -117,5 +117,25 @@ describe('F-04 Response Submission Unit Tests (BR-06 Validation)', () => {
     };
     const resDup = validateResponse(sampleSurvey, duplicateAnswerBody);
     expect(resDup.valid).toBe(false);
+
+    // 4. Non-integer / boolean / array / string questionId and optionId
+    const nonIntegerValues = [true, false, [3], '101', 1.5, {}];
+    for (const val of nonIntegerValues) {
+      const badQId = validateResponse(sampleSurvey, {
+        answers: [
+          { questionId: val, optionId: 201 },
+          { questionId: 102, ratingValue: 4 },
+        ],
+      });
+      expect(badQId.valid).toBe(false);
+
+      const badOptId = validateResponse(sampleSurvey, {
+        answers: [
+          { questionId: 101, optionId: val },
+          { questionId: 102, ratingValue: 4 },
+        ],
+      });
+      expect(badOptId.valid).toBe(false);
+    }
   });
 });

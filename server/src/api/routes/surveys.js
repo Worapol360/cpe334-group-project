@@ -38,7 +38,15 @@ surveysRouter.get(
       return;
     }
 
-    res.status(200).json({ survey });
+    let myResponseId = null;
+    if (req.user?.id) {
+      const myResp = await findResponseBySurveyAndRespondent(prisma, survey.id, req.user.id);
+      if (myResp) {
+        myResponseId = myResp.id;
+      }
+    }
+
+    res.status(200).json({ survey: { ...survey, myResponseId } });
   }),
 );
 

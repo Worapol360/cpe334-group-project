@@ -48,12 +48,12 @@ export function validateResponse(survey, body) {
 
     const { questionId, optionId, ratingValue } = ans;
 
-    if (questionId === undefined || questionId === null || !Number.isInteger(Number(questionId))) {
+    if (questionId === undefined || questionId === null || typeof questionId !== 'number' || !Number.isInteger(questionId)) {
       fields.push({ field: `${prefix}.questionId`, message: 'Question ID is required and must be an integer' });
       continue;
     }
 
-    const qId = Number(questionId);
+    const qId = questionId;
     const question = questionMap.get(qId);
 
     if (!question) {
@@ -79,13 +79,13 @@ export function validateResponse(survey, body) {
           field: `${prefix}.optionId`,
           message: `Option is required for single_choice question ${qId}: "${question.text}"`,
         });
-      } else if (!Number.isInteger(Number(optionId))) {
+      } else if (typeof optionId !== 'number' || !Number.isInteger(optionId)) {
         fields.push({
           field: `${prefix}.optionId`,
           message: `Option ID must be an integer for question ${qId}`,
         });
       } else {
-        const optId = Number(optionId);
+        const optId = optionId;
         const validOption = Array.isArray(question.options) && question.options.some((o) => o.id === optId);
         if (!validOption) {
           fields.push({
@@ -105,7 +105,7 @@ export function validateResponse(survey, body) {
       if (fields.length === 0 || !fields.some((f) => f.field.startsWith(prefix))) {
         answersByQuestionId.set(qId, {
           questionId: qId,
-          optionId: Number(optionId),
+          optionId,
           ratingValue: null,
         });
       }
