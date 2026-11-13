@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  displayName  String    @map("display_name")
+  role         String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  sessions     Session[]
+  surveys      Survey[]
+
+  @@map("users")
+}
+
+model Session {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique @map("token_hash")
+  userId    Int       @map("user_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Survey {
+  id          Int        @id @default(autoincrement())
+  ownerId     Int        @map("owner_id")
+  title       String
+  description String?
+  status      String     @default("draft")
+  mode        String     @default("identified")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  publishedAt DateTime?  @map("published_at")
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  questions   Question[]
+
+  @@map("surveys")
+}
+
+model Question {
+  id       Int              @id @default(autoincrement())
+  surveyId Int              @map("survey_id")
+  position Int
+  text     String
+  type     String
+  survey   Survey           @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  options  QuestionOption[]
+
+  @@unique([surveyId, position])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         Int      @id @default(autoincrement())
+  questionId Int      @map("question_id")
+  position   Int
+  label      String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, position])
+  @@map("question_options")
+}
