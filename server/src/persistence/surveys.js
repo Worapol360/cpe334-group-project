@@ -87,3 +87,47 @@ export async function findSurveyById(prisma, id) {
     },
   });
 }
+
+export async function listPublishedSurveys(prisma) {
+  return prisma.survey.findMany({
+    where: { status: 'published' },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function findPublishedSurveyById(prisma, id) {
+  return prisma.survey.findFirst({
+    where: { id, status: 'published' },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      questions: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          position: true,
+          text: true,
+          type: true,
+          options: {
+            orderBy: { position: 'asc' },
+            select: { id: true, label: true },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function publishSurveyIfDraft(prisma, id, publishedAt) {
+  const result = await prisma.survey.updateMany({
+    where: { id, status: 'draft' },
+    data: { status: 'published', publishedAt },
+  });
+  return result.count === 1;
+}
