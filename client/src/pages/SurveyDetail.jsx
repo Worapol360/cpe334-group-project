@@ -140,18 +140,31 @@ export default function SurveyDetail() {
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 409) {
-          setSubmitError(err.message || 'You have already submitted a response to this survey (DUPLICATE_RESPONSE)');
+        const errCode = err.body?.error?.code;
+        const errFields = err.body?.error?.fields;
+        const errMsg = err.body?.error?.message || err.message;
+
+        if (err.status === 409 && errCode === 'DUPLICATE_RESPONSE') {
+          setSubmitError(errMsg || 'You have already submitted a response to this survey');
           setMyResponseId(true);
-        } else if (err.status === 422 && Array.isArray(err.fields)) {
+        } else if (err.status === 422 && Array.isArray(errFields)) {
           const serverErrors = {};
-          err.fields.forEach((f) => {
+          errFields.forEach((f) => {
             serverErrors[f.field] = f.message;
+            const matchIndex = f.field.match(/^answers\[(\d+)\]/);
+            if (matchIndex) {
+              const matchedIdx = Number(matchIndex[1]);
+              serverErrors[matchedIdx] = f.message;
+              const ansObj = formattedAnswers[matchedIdx];
+              if (ansObj?.questionId) {
+                serverErrors[ansObj.questionId] = f.message;
+              }
+            }
           });
           setFieldErrors(serverErrors);
           setSubmitError('Please fix the validation errors below');
         } else {
-          setSubmitError(err.message);
+          setSubmitError(errMsg);
         }
       } else {
         setSubmitError('Failed to submit response. Please try again.');
