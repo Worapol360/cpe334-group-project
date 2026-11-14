@@ -35,7 +35,7 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 | TC-INT-06 | NFR-07 | API | fault injected into a handler | call endpoint | 500 `INTERNAL_ERROR`, no stack/SQL/path in body |
 | TC-INT-07 | FR-11, BR-07 | API/DB | respondent1 and 2 submit different answers | owner summary | counts match both; no identifiers in JSON |
 | TC-E2E-01 | FR-01..FR-11 | E2E | seeded users | owner logs in, creates + publishes; logs out; respondent logs in, answers, sees confirmation; logs out; owner opens summary | summary shows 1 response and correct counts |
-| TC-E2E-02 | BR-01 | E2E | respondent already answered | open survey again / try to resubmit | form disabled or 409 error shown; no second response |
+| TC-E2E-02 | BR-01 | E2E | respondent already answered | open survey again / try to resubmit | form disabled and 409 DUPLICATE_RESPONSE on resubmit attempt; no second response |
 | TC-E2E-03 | FR-04, NFR-03 | E2E + API | respondent logged in | open `/owner/surveys` by URL; call owner API from the page context | "not allowed" page; API returns 403 |
 | TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | – | invalid login; valid login; logout; back button | error shown; logged in; login page; protected data not shown |
 | TC-MAN-01 | NFR-08 | Manual | clean clone, only README | follow README (≤ 6 commands) | app runs, tests run; time and commands recorded |
@@ -59,16 +59,16 @@ A feature or the sprint is **Done** only when all hold:
 - [x] Negative, boundary, and role/ownership tests included and passing.
 - [x] Persistence verified through the real database (not mock-only).
 - [x] TDD evidence kept for rule work (failing → passing, commit IDs).
-- [x] PR reviewed by the teammate with a specific check/finding; author did not approve own PR.
+- [ ] PR reviewed by the teammate with a specific check/finding; author did not approve own PR.
 - [x] Feature merged into `sprint1-staging`; integration and system tests (TEST-01) pass there.
 - [ ] Release PR `sprint1-staging → main` reviewed and merged; release tagged `v0.1.0-sprint1`.
 - [x] README, `.env.example`, contracts, traceability and results table are up to date.
 - [x] No secrets in Git; synthetic data only.
-- [x] Incomplete work and limitations disclosed in Part F.
+- [ ] Incomplete work and limitations disclosed in Part F.
 
 ## 6. AC-to-test results table (fill after execution)
 
-Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 120 / Fail: 0 / Skip: 0
+Release commit: `8bafed5` · Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 122 / Fail: 0 / Skip: 0
 
 | AC | Planned tests | Actual file / test name | Result |
 |---|---|---|---|
@@ -142,11 +142,11 @@ Command: `npm run test:unit && npm run test:api && npx playwright test` · Total
 | TC-INT-06 | NFR-07 | API | `tests/integration/system.test.js`: TC-INT-06 Fault Injection Error Masking (500 safe body) | Pass |
 | TC-INT-07 | FR-11, BR-07 | API/DB | `tests/integration/system.test.js`: TC-INT-07 Privacy in Summary (2 respondents, recursive key check) | Pass |
 | TC-E2E-01 | FR-01..FR-11 | E2E | `e2e/system.spec.js`: TC-E2E-01 Full User Journey (owner create+publish → respondent answer → owner summary) | Pass (2.6s) |
-| TC-E2E-02 | BR-01 | E2E | `e2e/system.spec.js`: TC-E2E-02 Duplicate Prevention UI (answered badge + disabled form on revisit) | Pass (0.9s) |
+| TC-E2E-02 | BR-01 | E2E | `e2e/system.spec.js`: TC-E2E-02 Duplicate Prevention UI (answered badge + disabled form on revisit + 409 DUPLICATE_RESPONSE on resubmit) | Pass (1.1s) |
 | TC-E2E-03 | FR-04, NFR-03 | E2E + API | `e2e/system.spec.js`: TC-E2E-03 Role Restriction (respondent URL navigation shows Not Allowed; API 403) | Pass (0.8s) |
 | TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | `e2e/system.spec.js`: TC-E2E-04 Login/Logout/Back-Button (invalid login error, valid login, logout, back button guard) | Pass (1.1s) |
-| TC-MAN-01 | NFR-08 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-01-readme-walkthrough.md` | Pass (Template documented) |
-| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (Template documented) |
+| TC-MAN-01 | NFR-08 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-01-readme-walkthrough.md` | Pass (6 commands executed, 18 unit + 79 API pass) |
+| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (32/32 states checked across all screens) |
 
 ## 7. TDD log (fill during implementation)
 
@@ -155,14 +155,14 @@ Command: `npm run test:unit && npm run test:api && npx playwright test` · Total
 | BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
 | Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
 | BR-03 / AC-F03-02 | TC-F03-02 | `c66ca7b` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fd33524` (2026-11-13) | `Pass (409 INVALID_STATE_TRANSITION)` |
-| NFR-02 / AC-F01-06 | TC-F01-09 | `b680517` (2026-11-12) | `AssertionError: expected false to be true` | `5c9f5ad` (2026-11-12) | `Pass (bcrypt verification true)` |
+| NFR-02 / AC-F01-06 | TC-F01-09 | `996b3c1` (2026-11-11) | `Pre-implementation failing suite (24 failed, endpoints return 404)` | `1f771c2` (2026-11-11) | `Pass (26/26 passed, password_hash verifies with bcrypt)` |
 
 ## 8. Git workflow evidence (fill for two completed Issues)
 
 | Issue | Feature / AC | Branch | Author | Reviewer | Review note (specific check) | PR → staging | Release PR → main | Commit IDs/dates (spec → tests → impl) |
 |---|---|---|---|---|---|---|---|---|
-| #05 | F-04 / AC-F04-01..13 | `feature/issue-05-sprint1-response-submit` | Student B (aranedlek) | Student A (Worapol360) | Verified strict integer validation in domain/response.js, DB constraint duplicate guard, Playwright run evidence, raw DoD output logging | PR #12 (merged `420b60a`) | PR #14 (pending) | Spec: `docs/sprints/sprint-1/feature-specs.md`<br>Tests: `081a52a` (2026-11-13)<br>Impl: `fe2835e` (2026-11-13)<br>Fixes: `423914c`, `fc254bd` (2026-11-14) |
-| #06 | F-05 / AC-F05-01..14 | `feature/issue-06-sprint1-summary` | Student A (Worapol360) | Student B (aranedlek) | Verified largest-remainder sum = 100.0, zero-vote option handling, HTTP 500 retry behavior, and responsive single-column layout | PR #13 (merged `93bc150`) | PR #14 (pending) | Spec: `789e8d8`, `889cb35` (2026-11-14)<br>Tests: `a2e0f9f`, `77ce96f`, `b19f257` (2026-11-14)<br>Impl: `bdbdd1a`, `f18cb71`, `dee99ce` (2026-11-14) |
+| #05 | F-04 / AC-F04-01..13 | `feature/issue-05-sprint1-response-submit` | Student B (aranedlek) | Student A (Worapol360) | Verified strict integer validation in domain/response.js, DB constraint duplicate guard, Playwright run evidence, raw DoD output logging | PR #12 (merged `420b60a`) | – | Spec: `docs/sprints/sprint-1/feature-specs.md`<br>Tests: `081a52a` (2026-11-13)<br>Impl: `fe2835e` (2026-11-13)<br>Fixes: `423914c`, `fc254bd` (2026-11-14) |
+| #06 | F-05 / AC-F05-01..14 | `feature/issue-06-sprint1-summary` | Student A (Worapol360) | Student B (aranedlek) | Verified largest-remainder sum = 100.0, zero-vote option handling, HTTP 500 retry behavior, and responsive single-column layout | PR #13 (merged `93bc150`) | – | Spec: `789e8d8`, `889cb35` (2026-11-14)<br>Tests: `a2e0f9f`, `77ce96f`, `b19f257` (2026-11-14)<br>Impl: `bdbdd1a`, `f18cb71`, `dee99ce` (2026-11-14) |
 
 Final board status screenshot and release tag/commit: `<..>`
 

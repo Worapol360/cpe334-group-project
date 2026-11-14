@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test';
 const SEED_PASSWORD = process.env.SEED_PASSWORD || 'change-me';
 const OWNER_EMAIL = 'owner1@example.test';
 const RESPONDENT_EMAIL = 'respondent1@example.test';
+const RESPONDENT2_EMAIL = 'respondent2@example.test';
 
 /* ------------------------------------------------------------------ */
 /*  Helper: login via UI                                              */
@@ -115,45 +116,62 @@ test('TC-E2E-01: owner creates + publishes survey; respondent answers + confirma
 /* ================================================================== */
 /*  TC-E2E-02  Duplicate Prevention UI                                */
 /* ================================================================== */
-test('TC-E2E-02: respondent who already answered sees disabled form or 409 on resubmit', async ({
+test('TC-E2E-02: respondent who already answered sees disabled form and receives 409 on resubmit attempt', async ({
   page,
 }) => {
-  // Use seeded published survey "Course CPE334 Feedback"
+  // Use respondent2 who starts with zero responses on the seeded published survey
   const PUB_SURVEY_TITLE = 'Course CPE334 Feedback';
 
-  await loginAs(page, RESPONDENT_EMAIL);
+  // 1. Login as respondent2
+  await loginAs(page, RESPONDENT2_EMAIL);
   await expect(page).toHaveURL(/\/surveys/);
 
-  // Check if Course CPE334 Feedback is already answered (e.g. from prior test)
+  // 2. Open published survey and extract surveyId
+  const surveyLink = page.getByRole('link', { name: PUB_SURVEY_TITLE });
+  const href = await surveyLink.getAttribute('href');
+  const surveyId = href.split('/').pop();
+  await surveyLink.click();
+  await expect(page).toHaveURL(/\/surveys\/\d+/);
+
+  // 3. Fill in answers and submit
+  const firstOption = page.locator('input[type="radio"]').first();
+  await firstOption.check();
+
+  const ratingButton = page.getByRole('button', { name: '5', exact: true });
+  await ratingButton.click();
+
+  await page.getByRole('button', { name: /Submit Response/i }).click();
+
+  // 4. Confirmation screen displayed
+  await expect(page).toHaveURL(/\/responses\/\d+/);
+  await expect(page.getByText(/Your response was recorded/i)).toBeVisible();
+
+  // 5. Return to /surveys -> survey has Answered badge
+  await page.goto('/surveys');
   const surveyItem = page.locator('li').filter({ hasText: PUB_SURVEY_TITLE });
-  const alreadyAnsweredBadge = surveyItem.getByTestId('answered-badge');
-  const isAlreadyAnswered = await alreadyAnsweredBadge.isVisible().catch(() => false);
+  await expect(surveyItem.getByTestId('answered-badge')).toBeVisible();
 
-  if (!isAlreadyAnswered) {
-    // 1. Submit response if not answered yet
-    await page.getByRole('link', { name: PUB_SURVEY_TITLE }).click();
-    await expect(page).toHaveURL(/\/surveys\/\d+/);
-
-    const firstOption = page.locator('input[type="radio"]').first();
-    await firstOption.check();
-
-    const ratingButton = page.getByRole('button', { name: '5', exact: true });
-    await ratingButton.click();
-
-    await page.getByRole('button', { name: /Submit Response/i }).click();
-    await expect(page).toHaveURL(/\/responses\/\d+/);
-
-    // 2. Go back to survey list and verify answered badge
-    await page.goto('/surveys');
-    await expect(surveyItem.getByTestId('answered-badge')).toBeVisible();
-  }
-
-  // 3. Open the survey again → form should be disabled and show already answered banner
+  // 6. Revisit survey detail -> form is disabled and already-answered banner is displayed
   await page.getByRole('link', { name: PUB_SURVEY_TITLE }).click();
   await expect(page).toHaveURL(/\/surveys\/\d+/);
 
   await expect(page.getByTestId('already-answered-banner')).toBeVisible();
   await expect(page.getByRole('button', { name: /Already Submitted/i })).toBeDisabled();
+
+  // 7. Direct POST resubmit attempt from page context returns 409 DUPLICATE_RESPONSE
+  const resubmitResult = await page.evaluate(async (id) => {
+    const res = await fetch(`/api/surveys/${id}/responses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ answers: [] }),
+    });
+    const body = await res.json().catch(() => ({}));
+    return { status: res.status, code: body?.error?.code };
+  }, surveyId);
+
+  expect(resubmitResult.status).toBe(409);
+  expect(resubmitResult.code).toBe('DUPLICATE_RESPONSE');
 });
 
 /* ================================================================== */
