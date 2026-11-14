@@ -73,18 +73,23 @@ Check order: authenticate → role → survey exists → status published → du
 ---
 
 ## F-05 Owner Aggregate Summary
-`GET /api/owner/surveys/{id}/summary` → `200`:
+`GET /api/owner/surveys/{id}/summary` → `200`, `Cache-Control: no-store`:
 
 ```json
 { "summary": {
     "surveyId": 12, "title": "...", "status": "published", "responseCount": 3,
+    "generatedAt": "2026-11-14T09:30:00.000Z",
     "questions": [
       { "questionId": 31, "text": "Pick the best topic", "type": "single_choice",
-        "options": [ { "optionId": 71, "label": "Git", "count": 2, "percent": 66.7 },
+        "options": [ { "optionId": 71, "label": "Git", "count": 1, "percent": 33.4 },
                      { "optionId": 72, "label": "Testing", "count": 1, "percent": 33.3 },
-                     { "optionId": 73, "label": "CI/CD", "count": 0, "percent": 0 } ] },
+                     { "optionId": 73, "label": "CI/CD", "count": 1, "percent": 33.3 } ] },
       { "questionId": 32, "text": "Rate the lab", "type": "rating",
         "distribution": { "1": 0, "2": 0, "3": 1, "4": 1, "5": 1 }, "average": 4.0 } ] } }
 ```
+
+`generatedAt` is the ISO-8601 time the aggregates were computed for this request.
+
+Percent rule (largest remainder): `tenths = floor(count / responseCount × 1000)` (integer tenths of a percent), then the leftover tenths needed to reach 1000 (i.e. 100.0 %) are distributed one each to the largest fractional remainders, ties broken by lower position in the `options` array, and each option is `tenths / 10`. Percentages therefore always sum to exactly 100.0 when `responseCount > 0` — e.g. three votes split 1/1/1 → 33.4, 33.3, 33.3 (naive rounding would give 99.7 for 9 options × 31 votes plus 1 option × 21 votes of 300) — and are `0` when `responseCount` is 0.
 
 Errors: 401; 403 (role or not owner); 404 unknown survey.

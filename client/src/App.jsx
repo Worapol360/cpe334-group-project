@@ -4,6 +4,7 @@ import Login from './pages/Login.jsx';
 import OwnerSurveys from './pages/OwnerSurveys.jsx';
 import CreateSurvey from './pages/CreateSurvey.jsx';
 import OwnerSurveyDetail from './pages/OwnerSurveyDetail.jsx';
+import OwnerSurveySummary from './pages/OwnerSurveySummary.jsx';
 import Surveys from './pages/Surveys.jsx';
 import SurveyDetail from './pages/SurveyDetail.jsx';
 import ResponseDetail from './pages/ResponseDetail.jsx';
@@ -59,6 +60,14 @@ export default function App() {
             element={
               <RequireAuth role="owner">
                 <OwnerSurveyDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/owner/surveys/:id/summary"
+            element={
+              <RequireAuth role="owner">
+                <OwnerSurveySummary />
               </RequireAuth>
             }
           />
