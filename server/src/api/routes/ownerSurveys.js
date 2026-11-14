@@ -54,6 +54,9 @@ ownerSurveysRouter.get(
 ownerSurveysRouter.get(
   '/:id/summary',
   asyncHandler(async (req, res) => {
+    // Freshness contract (F-05): never serve a cached aggregate.
+    res.set('Cache-Control', 'no-store');
+
     if (!/^\d+$/.test(req.params.id)) {
       res.status(404).json(errorBody('NOT_FOUND', 'Survey not found'));
       return;
@@ -76,7 +79,9 @@ ownerSurveysRouter.get(
     const counts = await loadSummaryCounts(prisma, surveyId);
     const summary = aggregate(survey, counts);
 
-    res.status(200).json({ summary });
+    res.status(200).json({
+      summary: { ...summary, generatedAt: new Date().toISOString() },
+    });
   }),
 );
 

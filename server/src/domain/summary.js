@@ -11,9 +11,13 @@
  *
  * Rules (feature-specs.md F-05):
  * - responseCount = number of responses.
- * - single_choice: count and percent = count/responseCount*100 rounded to 1
- *   decimal per option (zero-vote options listed); percent 0 when there are
- *   no responses.
+ * - single_choice: count per option (zero-vote options listed); percent is
+ *   count/responseCount*100 rounded to 1 decimal by the largest-remainder
+ *   method: integer tenths = floor(count*1000/responseCount), then the
+ *   leftover tenths needed to reach 1000 (100.0 %) are given one each to the
+ *   largest fractional remainders (ties -> lower option position), so the
+ *   percents sum to exactly 100.0 when responseCount > 0 and are all 0 when
+ *   responseCount is 0.
  * - rating: distribution for 1..5 (zeros included) and average rounded to
  *   2 decimals, null when there are no responses.
  */
@@ -25,9 +29,28 @@ function roundTo(value, decimals) {
   return Math.round(value * factor) / factor;
 }
 
-function percentOf(count, responseCount) {
-  if (!responseCount) return 0;
-  return roundTo((count / responseCount) * 100, 1);
+/**
+ * Integer largest-remainder rounding of per-option counts to tenths of a
+ * percent that sum to exactly 1000 (100.0 %) when responseCount > 0.
+ */
+function percentsOf(counts, responseCount) {
+  if (!responseCount || counts.length === 0) return counts.map(() => 0);
+
+  const tenths = counts.map((count) => Math.floor((count * 1000) / responseCount));
+  const order = counts
+    .map((count, index) => ({
+      index,
+      remainder: count * 1000 - tenths[index] * responseCount,
+    }))
+    .sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+
+  let leftover = 1000 - tenths.reduce((sum, value) => sum + value, 0);
+  for (let round = 0; leftover > 0; round += 1) {
+    tenths[order[round % order.length].index] += 1;
+    leftover -= 1;
+  }
+
+  return tenths.map((value) => value / 10);
 }
 
 function toGroupedCounts(source) {
@@ -74,17 +97,17 @@ export function aggregate(surveyDefinition, responses) {
 
   const summaryQuestions = questions.map((question) => {
     if (question.type === 'single_choice') {
-      const options = (Array.isArray(question.options) ? question.options : []).map(
-        (option) => {
-          const count = choiceCounts.get(`${question.id}:${option.id}`) || 0;
-          return {
-            optionId: option.id,
-            label: option.label,
-            count,
-            percent: percentOf(count, responseCount),
-          };
-        },
+      const optionList = Array.isArray(question.options) ? question.options : [];
+      const optionCounts = optionList.map(
+        (option) => choiceCounts.get(`${question.id}:${option.id}`) || 0,
       );
+      const optionPercents = percentsOf(optionCounts, responseCount);
+      const options = optionList.map((option, index) => ({
+        optionId: option.id,
+        label: option.label,
+        count: optionCounts[index],
+        percent: optionPercents[index],
+      }));
       return {
         questionId: question.id,
         text: question.text,

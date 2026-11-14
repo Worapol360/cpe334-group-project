@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar.jsx';
 import { api, ApiError } from '../api.js';
+import './OwnerSurveySummary.css';
 
 const STATUS_COLORS = {
   published: { background: '#dcfce7', color: '#166534' },
   closed: { background: '#f3f4f6', color: '#4b5563' },
   draft: { background: '#fef3c7', color: '#92400e' },
 };
+
+const RATING_LEVELS = [1, 2, 3, 4, 5];
 
 function statusBadgeStyle(status) {
   const colors = STATUS_COLORS[status] || STATUS_COLORS.draft;
@@ -22,45 +25,165 @@ function statusBadgeStyle(status) {
   };
 }
 
+function formatUpdatedAt(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  const pad = (value, width = 2) => String(value).padStart(width, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.` +
+    `${pad(date.getMilliseconds(), 3)}`
+  );
+}
+
+function formatPercent(percent) {
+  return `${percent.toFixed(1)}%`;
+}
+
+function describeError(err) {
+  if (!(err instanceof ApiError)) {
+    return {
+      retryable: true,
+      message: 'Failed to load summary. Check your connection and try again.',
+    };
+  }
+  if (err.status === 404) {
+    return { retryable: false, message: 'Survey not found' };
+  }
+  if (err.status === 403) {
+    return { retryable: false, message: 'You are not allowed to view this summary' };
+  }
+  if (err.status >= 500) {
+    return { retryable: true, message: err.message || 'Failed to load summary' };
+  }
+  return { retryable: false, message: err.message || 'Failed to load summary' };
+}
+
 export default function OwnerSurveySummary() {
   const { id } = useParams();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const currentRequest = useRef({ id, token: 0 });
+  currentRequest.current = { id, token: reloadToken };
+
+  const reload = useCallback(() => {
+    setReloadToken((token) => token + 1);
+  }, []);
 
   useEffect(() => {
-    let active = true;
+    const request = { id, token: reloadToken };
+    const isCurrent = () =>
+      currentRequest.current.id === request.id &&
+      currentRequest.current.token === request.token;
 
     async function loadSummary() {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        setError(null);
         const data = await api(`/api/owner/surveys/${id}/summary`);
-        if (active) {
-          setSummary(data?.summary || null);
-        }
+        if (isCurrent()) setSummary(data?.summary || null);
       } catch (err) {
-        if (active) {
-          if (err instanceof ApiError && err.status === 404) {
-            setError('Survey not found');
-          } else if (err instanceof ApiError && err.status === 403) {
-            setError('You are not allowed to view this summary');
-          } else {
-            setError(err instanceof ApiError ? err.message : 'Failed to load summary');
-          }
-        }
+        if (isCurrent()) setError(describeError(err));
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (isCurrent()) setLoading(false);
       }
     }
 
     loadSummary();
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  }, [id, reloadToken]);
+
+  const questionCards = useMemo(() => {
+    if (!summary || summary.responseCount === 0) return [];
+    return summary.questions.map((question) => (
+      <section
+        key={question.questionId}
+        data-testid={`summary-question-${question.questionId}`}
+        className="summary-card"
+      >
+        <div className="summary-card-head">
+          <span style={{ fontWeight: 600 }}>{question.text}</span>
+          <span className="summary-type">{question.type.replace('_', ' ')}</span>
+        </div>
+
+        {question.type === 'single_choice' && (
+          <table className="summary-table">
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th className="summary-col-count">Count</th>
+                <th className="summary-col-percent">Percent</th>
+                <th className="summary-col-bar"> </th>
+              </tr>
+            </thead>
+            <tbody>
+              {question.options.map((option) => (
+                <tr key={option.optionId}>
+                  <td role="cell">{option.label}</td>
+                  <td role="cell">
+                    <span className="summary-stack-label">Count</span>
+                    <span data-testid={`option-count-${option.optionId}`}>{option.count}</span>
+                  </td>
+                  <td role="cell">
+                    <span className="summary-stack-label">Percent</span>
+                    <span data-testid={`option-percent-${option.optionId}`}>
+                      {formatPercent(option.percent)}
+                    </span>
+                  </td>
+                  <td role="cell" className="summary-bar-cell">
+                    <div
+                      className="summary-bar"
+                      style={{
+                        width: `${option.percent}%`,
+                        minWidth: option.count > 0 ? '4px' : 0,
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {question.type === 'rating' && (
+          <div>
+            <table className="summary-table">
+              <thead>
+                <tr>
+                  <th>Rating</th>
+                  {RATING_LEVELS.map((value) => (
+                    <th key={value}>{value}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td role="cell">Count</td>
+                  {RATING_LEVELS.map((value) => (
+                    <td key={value} role="cell">
+                      <span className="summary-stack-label">{value}</span>
+                      <span data-testid={`rating-count-${question.questionId}-${value}`}>
+                        {question.distribution[String(value)]}
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+            <p style={{ margin: '0.75rem 0 0', color: '#374151' }}>
+              Average:{' '}
+              <span data-testid={`rating-average-${question.questionId}`}>
+                {question.average === null || question.average === undefined
+                  ? '—'
+                  : question.average.toFixed(2)}
+              </span>
+            </p>
+          </div>
+        )}
+      </section>
+    ));
+  }, [summary]);
 
   return (
     <>
@@ -75,9 +198,25 @@ export default function OwnerSurveySummary() {
           </Link>
         </div>
 
-        {loading && <p data-testid="loading">Loading summary…</p>}
+        {error && error.retryable && (
+          <div
+            data-testid="summary-error"
+            role="alert"
+            style={{
+              color: '#dc2626',
+              background: '#fee2e2',
+              padding: '1rem',
+              borderRadius: '4px',
+            }}
+          >
+            <p style={{ margin: '0 0 0.75rem 0' }}>{error.message}</p>
+            <button type="button" className="summary-retry" data-testid="summary-retry" onClick={reload}>
+              Retry
+            </button>
+          </div>
+        )}
 
-        {error && (
+        {error && !error.retryable && (
           <div
             data-testid="error-message"
             role="alert"
@@ -88,22 +227,23 @@ export default function OwnerSurveySummary() {
               borderRadius: '4px',
             }}
           >
-            {error}
+            {error.message}
           </div>
         )}
 
-        {!loading && !error && summary && (
+        {!error && loading && !summary && <p data-testid="loading">Loading summary…</p>}
+
+        {!error && loading && summary && (
+          <p style={{ margin: '0 0 0.5rem 0', color: '#6b7280' }}>Refreshing…</p>
+        )}
+
+        {!error && summary && (
           <div>
             <div style={{ marginBottom: '1rem' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: '1rem',
-                }}
-              >
-                <h1 style={{ margin: '0 0 0.5rem 0' }}>{summary.title}</h1>
+              <div className="summary-header">
+                <h1 style={{ margin: '0 0 0.5rem 0', overflowWrap: 'anywhere' }}>
+                  {summary.title}
+                </h1>
                 <span style={statusBadgeStyle(summary.status)}>{summary.status}</span>
               </div>
               <p
@@ -113,6 +253,19 @@ export default function OwnerSurveySummary() {
                 {summary.responseCount}{' '}
                 {summary.responseCount === 1 ? 'response' : 'responses'}
               </p>
+              <div className="summary-meta">
+                <span data-testid="summary-updated-at" style={{ color: '#6b7280' }}>
+                  Updated at {formatUpdatedAt(summary.generatedAt)}
+                </span>
+                <button
+                  type="button"
+                  className="summary-refresh"
+                  data-testid="summary-refresh"
+                  onClick={reload}
+                >
+                  Refresh
+                </button>
+              </div>
             </div>
 
             {summary.responseCount === 0 && (
@@ -130,119 +283,7 @@ export default function OwnerSurveySummary() {
             )}
 
             {summary.responseCount > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  marginTop: '1.5rem',
-                }}
-              >
-                {summary.questions.map((question) => (
-                  <div
-                    key={question.questionId}
-                    data-testid={`summary-question-${question.questionId}`}
-                    style={{
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '6px',
-                      padding: '1rem 1.25rem',
-                      background: '#fff',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: '0.75rem',
-                      }}
-                    >
-                      <span style={{ fontWeight: 600 }}>{question.text}</span>
-                      <span
-                        style={{
-                          fontSize: '0.8rem',
-                          color: '#6b7280',
-                          textTransform: 'capitalize',
-                        }}
-                      >
-                        {question.type.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    {question.type === 'single_choice' && (
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                            <th style={{ padding: '0.5rem 0' }}>Option</th>
-                            <th style={{ padding: '0.5rem 0', width: '80px' }}>Count</th>
-                            <th style={{ padding: '0.5rem 0', width: '100px' }}>Percent</th>
-                            <th style={{ padding: '0.5rem 0' }}> </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {question.options.map((option) => (
-                            <tr
-                              key={option.optionId}
-                              data-testid="summary-option-row"
-                              style={{ borderBottom: '1px solid #f3f4f6' }}
-                            >
-                              <td style={{ padding: '0.5rem 0' }}>{option.label}</td>
-                              <td style={{ padding: '0.5rem 0' }}>{option.count}</td>
-                              <td style={{ padding: '0.5rem 0' }}>{option.percent}%</td>
-                              <td style={{ padding: '0.5rem 0' }}>
-                                <div
-                                  style={{
-                                    height: '10px',
-                                    width: `${option.percent}%`,
-                                    minWidth: option.count > 0 ? '4px' : 0,
-                                    background: '#2563eb',
-                                    borderRadius: '9999px',
-                                  }}
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-
-                    {question.type === 'rating' && (
-                      <div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                              <th style={{ padding: '0.5rem 0' }}>Rating</th>
-                              {[1, 2, 3, 4, 5].map((value) => (
-                                <th key={value} style={{ padding: '0.5rem 0', width: '15%' }}>
-                                  {value}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td style={{ padding: '0.5rem 0', color: '#6b7280' }}>Count</td>
-                              {[1, 2, 3, 4, 5].map((value) => (
-                                <td key={value} style={{ padding: '0.5rem 0' }}>
-                                  {question.distribution[String(value)]}
-                                </td>
-                              ))}
-                            </tr>
-                          </tbody>
-                        </table>
-                        <p
-                          data-testid="summary-rating-average"
-                          style={{ margin: '0.75rem 0 0 0', color: '#374151' }}
-                        >
-                          Average:{' '}
-                          {question.average === null || question.average === undefined
-                            ? '—'
-                            : question.average}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <div className="summary-questions">{questionCards}</div>
             )}
           </div>
         )}
