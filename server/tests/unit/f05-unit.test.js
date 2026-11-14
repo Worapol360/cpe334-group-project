@@ -118,6 +118,10 @@ function ratingResponse(id, ratingValue) {
   };
 }
 
+function tenthsSum(options) {
+  return options.reduce((sum, option) => sum + Math.round(option.percent * 10), 0);
+}
+
 describe('F-05 Owner Aggregate Summary Unit Tests (pure domain aggregate)', () => {
   it('TC-F05-01: aggregate() over the 3-response fixture -> responseCount 3; Git 2, Testing 1, CI/CD 0; rating distribution 3/4/5 = 1 each', () => {
     const summary = aggregate(FIXTURE_SURVEY, FIXTURE_RESPONSES);
@@ -136,7 +140,7 @@ describe('F-05 Owner Aggregate Summary Unit Tests (pure domain aggregate)', () =
     expect(rating.distribution).toEqual({ 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 });
   });
 
-  it('TC-F05-03: percent = count/responseCount*100 rounded to 1 decimal -> 1,1,1 of 3 = 33.3 each; 2,1 of 3 = 66.7 and 33.3', () => {
+  it('TC-F05-03: percent uses largest-remainder rounding to 1 decimal -> 1,1,1 of 3 = 33.4, 33.3, 33.3; 2,1,0 of 3 = 66.7, 33.3, 0; each set sums to exactly 100.0', () => {
     // counts 1, 1, 1 of 3
     const evenSurvey = choiceSurvey(['Alpha', 'Beta', 'Gamma']);
     const evenResponses = [
@@ -146,9 +150,9 @@ describe('F-05 Owner Aggregate Summary Unit Tests (pure domain aggregate)', () =
     ];
     const evenSummary = aggregate(evenSurvey, evenResponses);
     expect(evenSummary.responseCount).toBe(3);
-    expect(evenSummary.questions[0].options.map((o) => o.percent)).toEqual([
-      33.3, 33.3, 33.3,
-    ]);
+    const evenOptions = evenSummary.questions[0].options;
+    expect(evenOptions.map((o) => o.percent)).toEqual([33.4, 33.3, 33.3]);
+    expect(tenthsSum(evenOptions)).toBe(1000);
 
     // counts 2, 1, 0 of 3
     const skewSurvey = choiceSurvey(['X', 'Y', 'Z']);
@@ -159,9 +163,9 @@ describe('F-05 Owner Aggregate Summary Unit Tests (pure domain aggregate)', () =
     ];
     const skewSummary = aggregate(skewSurvey, skewResponses);
     expect(skewSummary.responseCount).toBe(3);
-    expect(skewSummary.questions[0].options.map((o) => o.percent)).toEqual([
-      66.7, 33.3, 0,
-    ]);
+    const skewOptions = skewSummary.questions[0].options;
+    expect(skewOptions.map((o) => o.percent)).toEqual([66.7, 33.3, 0]);
+    expect(tenthsSum(skewOptions)).toBe(1000);
   });
 
   it('TC-F05-04: rating average rounded to 2 decimals -> [1,2] = 1.50, [3,4,5] = 4.00, [5,5,4] = 4.67', () => {
@@ -183,5 +187,55 @@ describe('F-05 Owner Aggregate Summary Unit Tests (pure domain aggregate)', () =
       ratingResponse(8, 4),
     ]);
     expect(third.questions[0].average).toBe(4.67);
+  });
+
+  it('TC-F05-10: largest-remainder rounding is distribution-safe: 300 votes over 11 options -> [10.4 x3, 10.3 x6, 7, 0] summing to exactly 100.0 (naive rounding gives 99.7)', () => {
+    const survey = choiceSurvey(
+      Array.from({ length: 11 }, (_, i) => `Option ${i + 1}`),
+    );
+    const groupedCounts = {
+      responseCount: 300,
+      counts: [
+        ...Array.from({ length: 9 }, (_, i) => ({
+          questionId: 21,
+          optionId: 210 + i,
+          ratingValue: null,
+          count: 31,
+        })),
+        { questionId: 21, optionId: 219, ratingValue: null, count: 21 },
+      ],
+    };
+
+    const summary = aggregate(survey, groupedCounts);
+    expect(summary.responseCount).toBe(300);
+
+    const options = summary.questions[0].options;
+    expect(options).toHaveLength(11);
+    expect(options.map((o) => o.percent)).toEqual([
+      10.4, 10.4, 10.4, 10.3, 10.3, 10.3, 10.3, 10.3, 10.3, 7, 0,
+    ]);
+    expect(tenthsSum(options)).toBe(1000);
+    expect(options[10].count).toBe(0);
+    expect(options[10].percent).toBe(0);
+  });
+
+  it('TC-F05-13: aggregate() keeps the full 1..5 rating distribution (zeros included) and average null when there are no responses', () => {
+    const withResponses = aggregate(FIXTURE_SURVEY, FIXTURE_RESPONSES);
+    const rating = withResponses.questions.find((q) => q.type === 'rating');
+    expect(Object.keys(rating.distribution)).toHaveLength(5);
+    expect(rating.distribution).toEqual({ 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 });
+    expect(rating.average).toBe(4);
+
+    const empty = aggregate(FIXTURE_SURVEY, []);
+    expect(empty.responseCount).toBe(0);
+    expect(empty.questions).toHaveLength(2);
+
+    const emptySingle = empty.questions.find((q) => q.type === 'single_choice');
+    expect(emptySingle.options.map((o) => o.count)).toEqual([0, 0, 0]);
+    expect(emptySingle.options.map((o) => o.percent)).toEqual([0, 0, 0]);
+
+    const emptyRating = empty.questions.find((q) => q.type === 'rating');
+    expect(emptyRating.distribution).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    expect(emptyRating.average).toBeNull();
   });
 });

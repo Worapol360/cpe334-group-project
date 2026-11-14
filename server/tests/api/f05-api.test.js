@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import { prisma, resetAndSeed } from '../harness/db.js';
@@ -289,5 +289,146 @@ describe('F-05 Owner Aggregate Summary API Tests', () => {
     const rating = summary.questions.find((q) => q.type === 'rating');
     expect(rating.distribution).toEqual({ 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 });
     expect(rating.average).toBe(4);
+  });
+
+  it('TC-F05-11: summary carries generatedAt (ISO-8601) and is served with Cache-Control: no-store', async () => {
+    const survey = await storeThreeResponseFixture();
+    const ownerCookie = await loginUser(OWNER1);
+
+    const res = await getSummary(survey.id, ownerCookie);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+
+    const { generatedAt } = res.body.summary;
+    expect(typeof generatedAt).toBe('string');
+    expect(generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
+  });
+
+  it('TC-F05-12: 300-vote fixture -> percents sum to exactly 100.0 with bounded grouped queries (no per-row reads)', async () => {
+    const owner = await prisma.user.findUnique({ where: { email: OWNER1 } });
+    const survey = await prisma.survey.create({
+      data: {
+        ownerId: owner.id,
+        title: 'F-05 Percent Fixture Survey',
+        description: '11 options; 300 votes split 31 x 9, 21, 0',
+        status: 'published',
+        mode: 'identified',
+        publishedAt: new Date(),
+        questions: {
+          create: [
+            {
+              position: 1,
+              text: 'Pick one of eleven',
+              type: 'single_choice',
+              options: {
+                create: Array.from({ length: 11 }, (_, i) => ({
+                  position: i + 1,
+                  label: `Option ${i + 1}`,
+                })),
+              },
+            },
+          ],
+        },
+      },
+      include: {
+        questions: {
+          orderBy: { position: 'asc' },
+          include: { options: { orderBy: { position: 'asc' } } },
+        },
+      },
+    });
+    const [question] = survey.questions;
+    const options = question.options;
+
+    await prisma.user.createMany({
+      data: Array.from({ length: 300 }, (_, i) => ({
+        email: `bulk-${i}@example.test`,
+        displayName: `Bulk Respondent ${i}`,
+        role: 'respondent',
+        passwordHash: 'not-a-real-hash',
+      })),
+      skipDuplicates: true,
+    });
+    const users = await prisma.user.findMany({
+      where: { email: { startsWith: 'bulk-' } },
+      select: { id: true },
+    });
+    expect(users).toHaveLength(300);
+
+    await prisma.response.createMany({
+      data: users.map((u) => ({ surveyId: survey.id, respondentId: u.id })),
+    });
+    const responses = await prisma.response.findMany({
+      where: { surveyId: survey.id },
+      select: { id: true },
+    });
+    expect(responses).toHaveLength(300);
+
+    // 279 votes = 31 x 9 over the first nine options, then 21 for option 10, 0 for option 11
+    const votes = Array.from({ length: 300 }, (_, i) => (i < 279 ? i % 9 : 9));
+    await prisma.answer.createMany({
+      data: responses.map((response, i) => ({
+        responseId: response.id,
+        questionId: question.id,
+        optionId: options[votes[i]].id,
+      })),
+    });
+
+    const ownerCookie = await loginUser(OWNER1);
+
+    const tracked = [
+      ['survey', 'findUnique'],
+      ['survey', 'findMany'],
+      ['survey', 'findFirst'],
+      ['response', 'count'],
+      ['response', 'findMany'],
+      ['response', 'findFirst'],
+      ['response', 'groupBy'],
+      ['answer', 'groupBy'],
+      ['answer', 'findMany'],
+      ['answer', 'findFirst'],
+      ['answer', 'count'],
+      ['answer', 'aggregate'],
+      ['question', 'findMany'],
+      ['questionOption', 'findMany'],
+      ['user', 'findMany'],
+    ];
+    const spies = tracked.map(([delegate, method]) => vi.spyOn(prisma[delegate], method));
+
+    try {
+      // control call: proves the spies intercept this shared prisma client
+      await prisma.survey.findUnique({ where: { id: survey.id } });
+      expect(spies[0]).toHaveBeenCalled();
+      spies.forEach((spy) => spy.mockClear());
+
+      const res = await getSummary(survey.id, ownerCookie);
+
+      expect(res.status).toBe(200);
+      const summary = res.body.summary;
+      expect(summary.responseCount).toBe(300);
+
+      const percents = summary.questions[0].options.map((o) => o.percent);
+      const tenths = percents.map((p) => Math.round(p * 10));
+      expect(tenths.reduce((a, b) => a + b, 0)).toBe(1000); // exactly 100.0
+      expect(percents[10]).toBe(0);
+
+      const calls = Object.fromEntries(
+        tracked.map(([delegate, method], i) => [
+          `${delegate}.${method}`,
+          spies[i].mock.calls.length,
+        ]),
+      );
+      expect(calls['answer.groupBy']).toBe(1);
+      expect(calls['response.count']).toBe(1);
+      expect(calls['response.findMany']).toBe(0);
+      expect(calls['response.findFirst']).toBe(0);
+      expect(calls['answer.findMany']).toBe(0);
+      expect(calls['answer.findFirst']).toBe(0);
+      expect(calls['answer.aggregate']).toBe(0);
+      expect(Object.values(calls).reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(8);
+    } finally {
+      spies.forEach((spy) => spy.mockRestore());
+    }
   });
 });
