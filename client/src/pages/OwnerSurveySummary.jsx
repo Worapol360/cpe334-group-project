@@ -95,7 +95,7 @@ export default function OwnerSurveySummary() {
   }, [id, reloadToken]);
 
   const questionCards = useMemo(() => {
-    if (!summary || summary.responseCount === 0) return [];
+    if (!summary) return [];
     return summary.questions.map((question) => (
       <section
         key={question.questionId}
@@ -282,9 +282,7 @@ export default function OwnerSurveySummary() {
               </div>
             )}
 
-            {summary.responseCount > 0 && (
-              <div className="summary-questions">{questionCards}</div>
-            )}
+            <div className="summary-questions">{questionCards}</div>
           </div>
         )}
       </main>
