@@ -131,6 +131,18 @@ export default function OwnerSurveyDetail() {
                     Publish
                   </button>
                 )}
+                <Link
+                  to={`/owner/surveys/${id}/summary`}
+                  data-testid="view-summary-link"
+                  style={{
+                    color: '#2563eb',
+                    fontWeight: 500,
+                    fontSize: '0.9rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  View summary →
+                </Link>
               </div>
             </div>
 

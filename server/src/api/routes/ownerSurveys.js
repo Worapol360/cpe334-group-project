@@ -6,8 +6,10 @@ import {
   findSurveyById,
   publishSurveyIfDraft,
 } from '../../persistence/surveys.js';
+import { loadSummaryCounts } from '../../persistence/summaries.js';
 import { validateSurveyInput } from '../../domain/survey.js';
 import { publishSurvey } from '../../domain/publication.js';
+import { aggregate } from '../../domain/summary.js';
 import { asyncHandler, errorBody } from '../errors.js';
 import { loadSession, requireRole } from '../middleware/session.js';
 
@@ -46,6 +48,40 @@ ownerSurveysRouter.get(
     }
 
     res.status(200).json({ survey });
+  }),
+);
+
+ownerSurveysRouter.get(
+  '/:id/summary',
+  asyncHandler(async (req, res) => {
+    // Freshness contract (F-05): never serve a cached aggregate.
+    res.set('Cache-Control', 'no-store');
+
+    if (!/^\d+$/.test(req.params.id)) {
+      res.status(404).json(errorBody('NOT_FOUND', 'Survey not found'));
+      return;
+    }
+
+    const surveyId = parseInt(req.params.id, 10);
+
+    const survey = await findSurveyById(prisma, surveyId);
+    if (!survey) {
+      res.status(404).json(errorBody('NOT_FOUND', 'Survey not found'));
+      return;
+    }
+
+    if (survey.ownerId !== req.user.id) {
+      res.status(403).json(errorBody('FORBIDDEN', 'You do not have permission to access this survey'));
+      return;
+    }
+
+    // Grouped counts only; no per-response rows are loaded or returned (BR-07)
+    const counts = await loadSummaryCounts(prisma, surveyId);
+    const summary = aggregate(survey, counts);
+
+    res.status(200).json({
+      summary: { ...summary, generatedAt: new Date().toISOString() },
+    });
   }),
 );
 
