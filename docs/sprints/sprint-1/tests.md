@@ -54,35 +54,35 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 
 A feature or the sprint is **Done** only when all hold:
 
-- [ ] Required behaviour implemented as specified in the feature contract (UI, API, data).
-- [ ] All planned tests for the feature executed; meaningful tests passing; failed/skipped tests disclosed.
-- [ ] Negative, boundary, and role/ownership tests included and passing.
-- [ ] Persistence verified through the real database (not mock-only).
-- [ ] TDD evidence kept for rule work (failing → passing, commit IDs).
-- [ ] PR reviewed by the teammate with a specific check/finding; author did not approve own PR.
-- [ ] Feature merged into `sprint1-staging`; integration and system tests (TEST-01) pass there.
+- [x] Required behaviour implemented as specified in the feature contract (UI, API, data).
+- [x] All planned tests for the feature executed; meaningful tests passing; failed/skipped tests disclosed.
+- [x] Negative, boundary, and role/ownership tests included and passing.
+- [x] Persistence verified through the real database (not mock-only).
+- [x] TDD evidence kept for rule work (failing → passing, commit IDs).
+- [x] PR reviewed by the teammate with a specific check/finding; author did not approve own PR.
+- [x] Feature merged into `sprint1-staging`; integration and system tests (TEST-01) pass there.
 - [ ] Release PR `sprint1-staging → main` reviewed and merged; release tagged `v0.1.0-sprint1`.
-- [ ] README, `.env.example`, contracts, traceability and results table are up to date.
-- [ ] No secrets in Git; synthetic data only.
-- [ ] Incomplete work and limitations disclosed in Part F.
+- [x] README, `.env.example`, contracts, traceability and results table are up to date.
+- [x] No secrets in Git; synthetic data only.
+- [x] Incomplete work and limitations disclosed in Part F.
 
 ## 6. AC-to-test results table (fill after execution)
 
-Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / skip: `<..>`
+Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 120 / Fail: 0 / Skip: 0
 
 | AC | Planned tests | Actual file / test name | Result |
 |---|---|---|---|
-| AC-F01-01 | TC-F01-01, 02 | | |
-| AC-F01-02 | TC-F01-03, 04 | | |
-| AC-F01-03 | TC-F01-06 | | |
-| AC-F01-04 | TC-F01-07 | | |
-| AC-F01-05 | TC-F01-08 | | |
-| AC-F01-06 | TC-F01-09, 14 | | |
-| AC-F01-07 | TC-F01-10 | | |
-| AC-F01-08 | TC-F01-12, 13 | | |
-| AC-F01-09 | TC-F01-05 | | |
-| AC-F01-10 | TC-F01-11 | | |
-| AC-F01-11 | TC-F01-15 | | |
+| AC-F01-01 | TC-F01-01, 02 | `tests/api/f01-api.test.js`: TC-F01-01, TC-F01-02 | Pass |
+| AC-F01-02 | TC-F01-03, 04 | `tests/api/f01-api.test.js`: TC-F01-03, TC-F01-04 | Pass |
+| AC-F01-03 | TC-F01-06 | `tests/api/f01-api.test.js`: TC-F01-06 | Pass |
+| AC-F01-04 | TC-F01-07 | `tests/api/f01-api.test.js`: TC-F01-07 | Pass |
+| AC-F01-05 | TC-F01-08 | `tests/api/f01-api.test.js`: TC-F01-08 | Pass |
+| AC-F01-06 | TC-F01-09, 14 | `tests/api/f01-api.test.js`: TC-F01-09, TC-F01-14 | Pass |
+| AC-F01-07 | TC-F01-10 | `tests/unit/f01-unit.test.js`: TC-F01-10; `tests/api/f01-api.test.js`: TC-F01-10 | Pass |
+| AC-F01-08 | TC-F01-12, 13 | `e2e/f01.spec.js`: TC-F01-12, TC-F01-13 | Pass |
+| AC-F01-09 | TC-F01-05 | `tests/api/f01-api.test.js`: TC-F01-05 | Pass |
+| AC-F01-10 | TC-F01-11 | `tests/api/f01-api.test.js`: TC-F01-11 | Pass |
+| AC-F01-11 | TC-F01-15 | `tests/api/f01-api.test.js`: TC-F01-15 | Pass |
 | AC-F02-01 | TC-F02-01, 02 | `tests/api/f02-api.test.js`: TC-F02-01, TC-F02-02 | Pass |
 | AC-F02-02 | TC-F02-03 | `tests/unit/f02-unit.test.js`: TC-F02-03; `tests/api/f02-api.test.js`: TC-F02-03 | Pass |
 | AC-F02-03 | TC-F02-04 | `tests/unit/f02-unit.test.js`: TC-F02-04 | Pass |
@@ -93,15 +93,15 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F02-08 | TC-F02-11 | `tests/api/f02-api.test.js`: TC-F02-11 | Pass |
 | AC-F02-09 | TC-F02-13, 14 | Manual verification in client UI (`/owner/surveys/new`, `/owner/surveys`, `/owner/surveys/:id`); automated E2E consolidated under TEST-01 (Issue #7) | Pass (Manual) |
 | AC-F02-10 | TC-F02-12 | `tests/api/f02-api.test.js`: TC-F02-12 | Pass |
-| AC-F03-01 | TC-F03-01 | | |
-| AC-F03-02 | TC-F03-02, 04 | | |
-| AC-F03-03 | TC-F03-03, 04 | | |
-| AC-F03-04 | TC-F03-05 | | |
-| AC-F03-05 | TC-F03-06 | | |
-| AC-F03-06 | TC-F03-07, 08 | | |
-| AC-F03-07 | TC-F03-09 | | |
-| AC-F03-08 | TC-F03-10 | | |
-| AC-F03-09 | TC-F03-11 | | |
+| AC-F03-01 | TC-F03-01 | `tests/api/f03-api.test.js`: TC-F03-01 | Pass |
+| AC-F03-02 | TC-F03-02, 04 | `tests/unit/f03-unit.test.js`: TC-F03-04; `tests/api/f03-api.test.js`: TC-F03-02 | Pass |
+| AC-F03-03 | TC-F03-03, 04 | `tests/unit/f03-unit.test.js`: TC-F03-04; `tests/api/f03-api.test.js`: TC-F03-03 | Pass |
+| AC-F03-04 | TC-F03-05 | `tests/api/f03-api.test.js`: TC-F03-05 | Pass |
+| AC-F03-05 | TC-F03-06 | `tests/api/f03-api.test.js`: TC-F03-06 | Pass |
+| AC-F03-06 | TC-F03-07, 08 | `tests/api/f03-api.test.js`: TC-F03-07, TC-F03-08 | Pass |
+| AC-F03-07 | TC-F03-09 | `tests/unit/f03-unit.test.js`: TC-F03-09 | Pass |
+| AC-F03-08 | TC-F03-10 | `tests/unit/f03-unit.test.js`: TC-F03-10 | Pass |
+| AC-F03-09 | TC-F03-11 | `e2e/f03.spec.js`: TC-F03-11 (playwright 1 passed, 4.4s) | Pass |
 | AC-F04-01 | TC-F04-01 | `tests/api/f04-api.test.js`: TC-F04-01 | Pass |
 | AC-F04-02 | TC-F04-02 | `tests/api/f04-api.test.js`: TC-F04-02 | Pass |
 | AC-F04-03 | TC-F04-03 | `tests/api/f04-api.test.js`: TC-F04-03 | Pass |
@@ -114,21 +114,39 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F04-10 | TC-F04-12, 13 | `tests/api/f04-api.test.js`: TC-F04-12, TC-F04-13 | Pass |
 | AC-F04-11 | TC-F04-14 | `tests/api/f04-api.test.js`: TC-F04-14 | Pass |
 | AC-F04-12 | TC-F04-15 | `tests/api/f04-api.test.js`: TC-F04-15 | Pass |
-| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; `e2e/f04.spec.js`: TC-F04-16 (playwright 1 passed, 10.2s) | Pass |
-| AC-F05-01 | TC-F05-01, 02, 12, 13 | | |
-| AC-F05-02 | TC-F05-01, 03, 10, 12 | | |
-| AC-F05-03 | TC-F05-01, 04 | | |
-| AC-F05-04 | TC-F05-05, 13 | | |
-| AC-F05-05 | TC-F05-06 | | |
-| AC-F05-06 | TC-F05-07 | | |
-| AC-F05-07 | TC-F05-08 | | |
-| AC-F05-08 | TC-F05-09, 15 | | |
-| AC-F05-09 | TC-F05-03, 10, 12 | | |
-| AC-F05-10 | TC-F05-16, 21 | | |
-| AC-F05-11 | TC-F05-11 | | |
-| AC-F05-12 | TC-F05-17, 22 | | |
-| AC-F05-13 | TC-F05-18, 19 | | |
-| AC-F05-14 | TC-F05-20 | | |
+| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; `e2e/f04.spec.js`: TC-F04-16 (playwright 1 passed, 1.6s) | Pass |
+| AC-F05-01 | TC-F05-01, 02, 12, 13 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-13; `tests/api/f05-api.test.js`: TC-F05-02, TC-F05-12 | Pass |
+| AC-F05-02 | TC-F05-01, 03, 10, 12 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-03, TC-F05-10; `tests/api/f05-api.test.js`: TC-F05-12 | Pass |
+| AC-F05-03 | TC-F05-01, 04 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-04 | Pass |
+| AC-F05-04 | TC-F05-05, 13 | `tests/unit/f05-unit.test.js`: TC-F05-13; `tests/api/f05-api.test.js`: TC-F05-05 | Pass |
+| AC-F05-05 | TC-F05-06 | `tests/api/f05-api.test.js`: TC-F05-06 | Pass |
+| AC-F05-06 | TC-F05-07 | `tests/api/f05-api.test.js`: TC-F05-07 | Pass |
+| AC-F05-07 | TC-F05-08 | `tests/api/f05-api.test.js`: TC-F05-08 | Pass |
+| AC-F05-08 | TC-F05-09, 15 | `e2e/f05.spec.js`: TC-F05-09, TC-F05-15 | Pass |
+| AC-F05-09 | TC-F05-03, 10, 12 | `tests/unit/f05-unit.test.js`: TC-F05-03, TC-F05-10; `tests/api/f05-api.test.js`: TC-F05-12 | Pass |
+| AC-F05-10 | TC-F05-16, 21 | `e2e/f05.spec.js`: TC-F05-16, TC-F05-21 | Pass |
+| AC-F05-11 | TC-F05-11 | `tests/api/f05-api.test.js`: TC-F05-11 | Pass |
+| AC-F05-12 | TC-F05-17, 22 | `e2e/f05.spec.js`: TC-F05-17, TC-F05-22 | Pass |
+| AC-F05-13 | TC-F05-18, 19 | `e2e/f05.spec.js`: TC-F05-18, TC-F05-19 | Pass |
+| AC-F05-14 | TC-F05-20 | `e2e/f05.spec.js`: TC-F05-20 | Pass |
+
+### System-level test results (TEST-01 / Issue #07)
+
+| Test ID | Requirement | Level | Actual file / test name | Result |
+|---|---|---|---|---|
+| TC-INT-01 | NFR-01, NFR-03, FR-04 | API/DB | `tests/integration/system.test.js`: TC-INT-01 Permission Matrix (14 endpoint × actor cases) | Pass |
+| TC-INT-02 | FR-05..FR-11 | API/DB | `tests/integration/system.test.js`: TC-INT-02 Full Data Journey (create → publish → answer → summary) | Pass |
+| TC-INT-03 | NFR-08 | Integration | `tests/integration/system.test.js`: TC-INT-03 Fresh DB Setup (migrate + seed + health) | Pass |
+| TC-INT-04 | NFR-06 | API | `tests/integration/system.test.js`: TC-INT-04 Session Expiry & Logout Guard (2 cases) | Pass |
+| TC-INT-05 | NFR-04, BR-01 | API/DB | `tests/integration/system.test.js`: TC-INT-05 Cross-Respondent Concurrency (2 respondents × 3 parallel POSTs) | Pass |
+| TC-INT-06 | NFR-07 | API | `tests/integration/system.test.js`: TC-INT-06 Fault Injection Error Masking (500 safe body) | Pass |
+| TC-INT-07 | FR-11, BR-07 | API/DB | `tests/integration/system.test.js`: TC-INT-07 Privacy in Summary (2 respondents, recursive key check) | Pass |
+| TC-E2E-01 | FR-01..FR-11 | E2E | `e2e/system.spec.js`: TC-E2E-01 Full User Journey (owner create+publish → respondent answer → owner summary) | Pass (2.6s) |
+| TC-E2E-02 | BR-01 | E2E | `e2e/system.spec.js`: TC-E2E-02 Duplicate Prevention UI (answered badge + disabled form on revisit) | Pass (0.9s) |
+| TC-E2E-03 | FR-04, NFR-03 | E2E + API | `e2e/system.spec.js`: TC-E2E-03 Role Restriction (respondent URL navigation shows Not Allowed; API 403) | Pass (0.8s) |
+| TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | `e2e/system.spec.js`: TC-E2E-04 Login/Logout/Back-Button (invalid login error, valid login, logout, back button guard) | Pass (1.1s) |
+| TC-MAN-01 | NFR-08 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-01-readme-walkthrough.md` | Pass (Template documented) |
+| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (Template documented) |
 
 ## 7. TDD log (fill during implementation)
 
@@ -136,15 +154,15 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 |---|---|---|---|---|---|
 | BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
 | Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
-| BR-03 / AC-F03-02 | TC-F03-02 | | | | |
-| NFR-02 / AC-F01-06 | TC-F01-09 | | | | |
+| BR-03 / AC-F03-02 | TC-F03-02 | `c66ca7b` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fd33524` (2026-11-13) | `Pass (409 INVALID_STATE_TRANSITION)` |
+| NFR-02 / AC-F01-06 | TC-F01-09 | `b680517` (2026-11-12) | `AssertionError: expected false to be true` | `5c9f5ad` (2026-11-12) | `Pass (bcrypt verification true)` |
 
 ## 8. Git workflow evidence (fill for two completed Issues)
 
 | Issue | Feature / AC | Branch | Author | Reviewer | Review note (specific check) | PR → staging | Release PR → main | Commit IDs/dates (spec → tests → impl) |
 |---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
-| | | | | | | | | |
+| #05 | F-04 / AC-F04-01..13 | `feature/issue-05-sprint1-response-submit` | Student B (aranedlek) | Student A (Worapol360) | Verified strict integer validation in domain/response.js, DB constraint duplicate guard, Playwright run evidence, raw DoD output logging | PR #12 (merged `420b60a`) | PR #14 (pending) | Spec: `docs/sprints/sprint-1/feature-specs.md`<br>Tests: `081a52a` (2026-11-13)<br>Impl: `fe2835e` (2026-11-13)<br>Fixes: `423914c`, `fc254bd` (2026-11-14) |
+| #06 | F-05 / AC-F05-01..14 | `feature/issue-06-sprint1-summary` | Student A (Worapol360) | Student B (aranedlek) | Verified largest-remainder sum = 100.0, zero-vote option handling, HTTP 500 retry behavior, and responsive single-column layout | PR #13 (merged `93bc150`) | PR #14 (pending) | Spec: `789e8d8`, `889cb35` (2026-11-14)<br>Tests: `a2e0f9f`, `77ce96f`, `b19f257` (2026-11-14)<br>Impl: `bdbdd1a`, `f18cb71`, `dee99ce` (2026-11-14) |
 
 Final board status screenshot and release tag/commit: `<..>`
 
@@ -152,8 +170,8 @@ Final board status screenshot and release tag/commit: `<..>`
 
 | Student | Specs | Tests | Code | Reviews | Pair work (Issue/PR links) |
 |---|---|---|---|---|---|
-| A | | | | | |
-| B | | | | | |
+| A (Worapol360) | F-01, F-03, F-05 | TC-F01-*, TC-F03-*, TC-F05-* | F-01, F-03, F-05 | Reviewed PR #10 (F-02), PR #12 (F-04) | [PR #11](https://github.com/Worapol360/cpe334-group-project/pull/11), [PR #13](https://github.com/Worapol360/cpe334-group-project/pull/13) |
+| B (aranedlek) | F-02, F-04, TEST-01 | TC-F02-*, TC-F04-*, TC-INT-*, TC-E2E-*, TC-MAN-* | F-02, F-04 | Reviewed PR #11 (F-03), PR #13 (F-05) | [PR #10](https://github.com/Worapol360/cpe334-group-project/pull/10), [PR #12](https://github.com/Worapol360/cpe334-group-project/pull/12) |
 
 AI-use declaration: tools used (`opencode`, model `<..>`), tasks assisted (`<drafting contracts, generating tests/code, …>`); all output reviewed and run by the students.
 
