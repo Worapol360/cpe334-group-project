@@ -41,7 +41,7 @@ test('TC-F05-09: owner opens the summary page of a survey with responses and of 
   await expect(page.getByTestId('summary-response-count')).toBeVisible();
   await expect(page.getByTestId('summary-response-count')).toContainText(/\d/);
   await expect(page.getByText('Which aspect did you find most valuable?')).toBeVisible();
-  await expect(page.getByText('Rate the lab')).toBeVisible();
+  await expect(page.getByText('How satisfied are you with the course pace? (1=Lowest, 5=Highest)')).toBeVisible();
 
   const chosenRow = page
     .getByTestId('summary-option-row')
