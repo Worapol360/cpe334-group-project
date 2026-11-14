@@ -16,7 +16,7 @@ Version v0.1 – 2026-11-10. Chain: **Requirement → Feature/Responsibility →
 | FR-08 List/open published surveys | F-03 | 1 | AC-F03-06 | TC-F03-07, 08 |
 | FR-09 Submit response | F-04 | 1 | AC-F04-01, 03..09, 11..13 | TC-F04-01, 03..11, 14..17 |
 | FR-10 View own response | F-04 | 1 | AC-F04-02, 10, 13 | TC-F04-02, 12, 13, 16 |
-| FR-11 Aggregate summary | F-05 | 1 | AC-F05-01..13 | TC-F05-01..13, 15..19 |
+| FR-11 Aggregate summary | F-05 | 1 | AC-F05-01..14 | TC-F05-01..13, 15..22 |
 | FR-12 Draft management | F-06 | 2 | planned | – |
 | FR-13 Close survey | F-08 | 2 | planned | – |
 | FR-14 More question types | F-07 | 2 | planned | – |
@@ -56,7 +56,7 @@ Version v0.1 – 2026-11-10. Chain: **Requirement → Feature/Responsibility →
 | NFR-06 Session lifecycle | F-01; TEST-01 | 1 | AC-F01-03, 05 | TC-F01-06, 08, TC-INT-04 |
 | NFR-07 Safe errors | F-01 (error handler); TEST-01 | 1 | AC-F01-09 | TC-F01-05, TC-INT-06 |
 | NFR-08 Reproducible setup | SYS-01, SYS-02 (F-01); TEST-01 | 1 | AC-F01-10 | TC-F01-11, TC-INT-03, TC-MAN-01 |
-| NFR-09 UI states | F-02..F-05; TEST-01 | 1 | AC-F02-09, AC-F03-09, AC-F04-13, AC-F05-08, 10, 12 | TC-F02-13, 14, TC-F03-11, TC-F04-16, TC-F05-09, 16, 17, TC-MAN-02 |
+| NFR-09 UI states | F-02..F-05; TEST-01 | 1 | AC-F02-09, AC-F03-09, AC-F04-13, AC-F05-08, 10, 12 | TC-F02-13, 14, TC-F03-11, TC-F04-16, TC-F05-09, 16, 17, 21, 22, TC-MAN-02 |
 | NFR-10 Deployability | F-01 (health, env config); SYS-03 | 1 design → Lab 5 verify | AC-F01-11 | TC-F01-15; Lab 5 checks C-01..C-06 |
 | NFR-11 Summary performance | F-14 | 3 | planned | – |
 | NFR-12 Anonymous privacy | F-12 | 3 | planned | – |
@@ -76,5 +76,6 @@ Version v0.1 – 2026-11-10. Chain: **Requirement → Feature/Responsibility →
 |---|---|---|---|---|
 | CHG-00 | 2026-11-10 | Initial baseline created | Team | all |
 | CHG-01 | 2026-11-14 | F-05 summary contract v0.2: largest-remainder percent rule, freshness (`generatedAt`, `Cache-Control: no-store`), Updated-at/Refresh and error/Retry UI, responsive layout with stable testids; AC-F05-02/08 revised, AC-F05-09..13 added, TC-F05-03/09 revised, TC-F05-10..13 and TC-F05-15..19 added, TC-F05-14 reserved | Team (issue #6) | `sprints/sprint-1/feature-specs.md`, `sprints/sprint-1/api-spec.md`, `sprints/sprint-1/ui-spec.md`, `sprints/sprint-1/tests.md`, FR-11, NFR-09 |
+| CHG-02 | 2026-11-14 | F-05 verification hardening from review 2: contract v0.3 — AC-F05-14 added, AC-F05-10 and AC-F05-12 extended (retry variants, long option labels); TC-F05-20..22 added | Team (issue #6) | `sprints/sprint-1/feature-specs.md`, `sprints/sprint-1/ui-spec.md`, `sprints/sprint-1/tests.md`, FR-11, NFR-09 |
 
 *(Add a row for each later change; never delete rows.)*

@@ -462,10 +462,11 @@ No schema change. Aggregates are computed from `responses`/`answers` by grouped 
 | AC-F05-07 | After a new response is submitted, the summary count increases by one and reflects its answers (persistence journey) |
 | AC-F05-08 | UI: summary page shows response count, option counts/percent and rating distribution/average under stable testids (`summary-response-count`, `option-count-{optionId}`, `option-percent-{optionId}`, `rating-count-{questionId}-{level}`, `rating-average-{questionId}`); empty, loading and error states present |
 | AC-F05-09 | Largest-remainder rounding is distribution-safe: option percentages of any response distribution sum to exactly 100.0 (verified on a 300-vote fixture where naive rounding sums to 99.7) |
-| AC-F05-10 | UI: summary shows an "Updated at" timestamp (`summary-updated-at`) and a Refresh control (`summary-refresh`); activating Refresh re-fetches and re-renders the aggregates |
+| AC-F05-10 | UI: summary shows an "Updated at" timestamp (`summary-updated-at`) and a Refresh control (`summary-refresh`); activating Refresh re-fetches and re-renders the aggregates. Retry is offered for network failure and HTTP 5xx, retry reloads without leaving the page (URL unchanged); 403 and 404 show "not allowed / not found" with no Retry |
 | AC-F05-11 | Summary response includes `generatedAt` (ISO-8601) and is sent with `Cache-Control: no-store` |
-| AC-F05-12 | UI: a failed summary fetch renders an error state (`summary-error`) with a Retry control (`summary-retry`); Retry re-issues the request and renders the data on success |
+| AC-F05-12 | UI: a failed summary fetch renders an error state (`summary-error`) with a Retry control (`summary-retry`); Retry re-issues the request and renders the data on success. Long option labels (up to 200 characters, with or without spaces) wrap inside their row, show their full text, and cause no horizontal page overflow at 375 px and at 1280 px |
 | AC-F05-13 | UI: below a 600 px viewport the summary stacks in a single column — each option's count and percent stacked under its label — with no horizontal scrolling, and rating questions render all levels 1–5 with labels |
+| AC-F05-14 | The UI displays response count, per-option count and per-option percent in separate elements, with exact values, for varied response counts (0, 1, 3 and 7 responses); the displayed percents of a question sum to 100.0 when responseCount > 0 |
 
 ### Definition of Done (feature)
 Product DoD plus: aggregation function covered by unit tests with the fixture above; TC-F05-06 and 07 written failing first; PR reviewed by B with a specific check (e.g. "recomputed percentages by hand for the fixture").
@@ -483,3 +484,4 @@ Product DoD plus: aggregation function covered by unit tests with the fixture ab
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial contract | – |
 | v0.2 | 2026-11-14 | F-05 revised: largest-remainder percent rule (AC-02, new AC-09), freshness `generatedAt` + `no-store` (new AC-11), Refresh/Updated-at and error/Retry UI (new AC-10, 12), stable testids + responsive layout (AC-08, new AC-13) | #6 change request |
+| v0.3 | 2026-11-14 | F-05 revised: AC-F05-14 added (exact values for 0/1/3/7 responses), AC-F05-10 extended (retry variants, no Retry on 403/404), AC-F05-12 extended (200-character option labels, no overflow at 375/1280 px) | Change request 2 from teammate review: stronger E2E value checks for varied response counts, retry variants, long option labels |

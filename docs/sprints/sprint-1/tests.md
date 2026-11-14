@@ -19,9 +19,9 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 | F-02 | 10 | 14 |
 | F-03 | 9 | 11 |
 | F-04 | 13 | 17 |
-| F-05 | 13 | 18 |
+| F-05 | 14 | 21 |
 | System (TEST-01) | – | 13 |
-| **Total** | **56** | **88** |
+| **Total** | **57** | **91** |
 
 ## 3. System-level tests (Issue #07, branch `test/issue-07-sprint1-integration-e2e`)
 
@@ -124,10 +124,11 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F05-07 | TC-F05-08 | | |
 | AC-F05-08 | TC-F05-09, 15 | | |
 | AC-F05-09 | TC-F05-03, 10, 12 | | |
-| AC-F05-10 | TC-F05-16 | | |
+| AC-F05-10 | TC-F05-16, 21 | | |
 | AC-F05-11 | TC-F05-11 | | |
-| AC-F05-12 | TC-F05-17 | | |
+| AC-F05-12 | TC-F05-17, 22 | | |
 | AC-F05-13 | TC-F05-18, 19 | | |
+| AC-F05-14 | TC-F05-20 | | |
 
 ## 7. TDD log (fill during implementation)
 
@@ -260,6 +261,9 @@ Each test links to its AC (`feature-specs.md`).
 | TC-F05-17 | 12 | E2E | summary API intercepted → 500 on first call | open summary, then click `summary-retry` | `summary-error` shown first; retry re-issues the request and the data renders (NFR-09) |
 | TC-F05-18 | 13 | E2E | fixture survey with responses; viewport 375 × 800 | open summary page | no horizontal scroll; question cards in one column; `option-count-*` stacked below its label (same left edge as `option-percent-*`) |
 | TC-F05-19 | 13 | E2E | fixture rating question (distribution 0,1,0,1,1) | open summary page | all levels 1–5 rendered with `rating-count-{questionId}-{1..5}` showing 0,1,0,1,1, zeros included |
+| TC-F05-20 | 14 | E2E | single_choice question with options A, B, C; four surveys created directly in the test DB with 0, 1 (A), 3 (A,A,B) and 7 (A,A,A,B,B,B,C) responses | open each summary page | `summary-response-count` exact ("0/1/3 responses"); `option-count-*` exact 0/0/0, 1/0/0, 2/1/0, 3/3/1; `option-percent-*` exact 0.0%/0.0%/0.0%, 100.0%/0.0%/0.0%, 66.7%/33.3%/0.0%, 42.9%/42.8%/14.3% (largest-remainder rule); all displayed percents of the question parsed and summed = 100.0 (0 when responseCount = 0) |
+| TC-F05-21 | 10 | E2E | summary request intercepted: (a) HTTP 500 on first call, (b) network abort on first call, (c) 403, (d) 404 | open summary page; for (a)/(b) click `summary-retry` once requests succeed | (a)/(b) `summary-error` + `summary-retry` visible, message human-readable (no stack, no JSON); retry renders the data, `summary-error` gone, `page.url()` unchanged and no full page reload (window marker kept); (c) "not allowed" message and no `summary-retry`; (d) "not found" message and no `summary-retry` |
+| TC-F05-22 | 12 | E2E | survey whose option labels include 200 characters with spaces and 200 characters without spaces; viewports 375 × 667 and 1280 × 800 | open summary page at each viewport | `document.documentElement.scrollWidth <= window.innerWidth`; each long label element shows its full text (`toHaveText`, no truncation) and its bounding box lies inside the viewport width; count and percent elements visible |
 
 ## 12. Revision history
 
@@ -267,3 +271,4 @@ Each test links to its AC (`feature-specs.md`).
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial version | – |
 | v0.2 | 2026-11-14 | F-05 v0.2: counts 8/9 → 13/18 (totals 56/88); TC-F05-03 and TC-F05-09 revised; TC-F05-10..13 and TC-F05-15..19 added; TC-F05-14 reserved | #6 change request |
+| v0.3 | 2026-11-14 | F-05 v0.3: counts 13/18 → 14/21 (totals 57/91); TC-F05-20 (varied response counts), TC-F05-21 (retry variants), TC-F05-22 (long option labels) added; §6 rows for AC-F05-10, 12, 14 updated | Change request 2 from teammate review |
