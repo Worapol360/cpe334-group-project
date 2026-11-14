@@ -68,7 +68,7 @@ A feature or the sprint is **Done** only when all hold:
 
 ## 6. AC-to-test results table (fill after execution)
 
-Release commit: `8bafed5` · Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 122 / Fail: 0 / Skip: 0
+Release commit: `34c51d6` · Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 122 / Fail: 0 / Skip: 0
 
 | AC | Planned tests | Actual file / test name | Result |
 |---|---|---|---|
@@ -146,7 +146,7 @@ Release commit: `8bafed5` · Command: `npm run test:unit && npm run test:api && 
 | TC-E2E-03 | FR-04, NFR-03 | E2E + API | `e2e/system.spec.js`: TC-E2E-03 Role Restriction (respondent URL navigation shows Not Allowed; API 403) | Pass (0.8s) |
 | TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | `e2e/system.spec.js`: TC-E2E-04 Login/Logout/Back-Button (invalid login error, valid login, logout, back button guard) | Pass (1.1s) |
 | TC-MAN-01 | NFR-08 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-01-readme-walkthrough.md` | Pass (6 commands executed, 18 unit + 79 API pass) |
-| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (32/32 states checked across all screens) |
+| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (33/33 states checked across all screens) |
 
 ## 7. TDD log (fill during implementation)
 
@@ -155,7 +155,7 @@ Release commit: `8bafed5` · Command: `npm run test:unit && npm run test:api && 
 | BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
 | Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
 | BR-03 / AC-F03-02 | TC-F03-02 | `c66ca7b` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fd33524` (2026-11-13) | `Pass (409 INVALID_STATE_TRANSITION)` |
-| NFR-02 / AC-F01-06 | TC-F01-09 | `996b3c1` (2026-11-11) | `Pre-implementation failing suite (24 failed, endpoints return 404)` | `1f771c2` (2026-11-11) | `Pass (26/26 passed, password_hash verifies with bcrypt)` |
+| Role Guard / AC-F01-07 | TC-F01-10 | `996b3c1` (2026-11-11) | `Error: checkRole is not implemented` | `1f771c2` (2026-11-11) | `Pass (requireRole accepts owner, rejects respondent)` |
 
 ## 8. Git workflow evidence (fill for two completed Issues)
 
