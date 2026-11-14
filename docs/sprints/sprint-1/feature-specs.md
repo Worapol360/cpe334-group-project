@@ -434,10 +434,12 @@ Running 1 test using 1 worker
 
 **Aggregation rules.**
 * `responseCount` = number of responses for the survey.
-* `single_choice`: for each option `count` and `percent = count / responseCount × 100`, rounded to 1 decimal; options with zero votes are listed; percentages sum to 100 ± 0.1 per rounding (not forced).
+* `single_choice`: for each option `count` and `percent` in percent, rounded to 1 decimal by the **largest-remainder method**: tenths = `floor(count / responseCount × 1000)`, then the remaining tenths are handed out one each to the largest fractional remainders (ties → lower position in the options array). Options with zero votes are listed; percentages sum to exactly 100.0 whenever `responseCount > 0`, and are all 0.0 when it is 0.
 * `rating`: `distribution` for values 1–5 (zeros included), `average` rounded to 2 decimals, `null` when no responses.
 * No responses: `responseCount = 0`, all counts 0, percent 0, average `null` (HTTP 200).
 * Summary is allowed for any status of an owned survey.
+
+**Freshness.** The summary payload carries `generatedAt` (ISO-8601 time the aggregates were computed for that request) and the endpoint responds with `Cache-Control: no-store`, so an owner never reads a cached aggregate; the UI shows an "Updated at" timestamp with a Refresh control that re-fetches the summary.
 
 **Privacy (BR-07).** The body contains no respondent id, name, email, response id or per-response answer list.
 
@@ -452,13 +454,18 @@ No schema change. Aggregates are computed from `responses`/`answers` by grouped 
 | AC | Criterion |
 |---|---|
 | AC-F05-01 | For a fixture of 3 responses, `responseCount` and every option count/rating distribution equal the expected values |
-| AC-F05-02 | Option percentages are `count / responseCount × 100` rounded to 1 decimal; zero-vote options are listed |
+| AC-F05-02 | Option percentages are `count / responseCount × 100` rounded to 1 decimal by the largest-remainder method so they sum to exactly 100.0 (all 0.0 when `responseCount` is 0); zero-vote options are listed |
 | AC-F05-03 | Rating average is the mean rounded to 2 decimals (e.g. ratings 3, 4, 5 → 4.00) |
 | AC-F05-04 | Survey with no responses → 200, counts 0, percent 0, average `null` |
 | AC-F05-05 | Other owner → 403; respondent → 403; anonymous → 401; none receive summary data |
 | AC-F05-06 | Summary JSON contains no respondent identifiers and no per-response answer data |
 | AC-F05-07 | After a new response is submitted, the summary count increases by one and reflects its answers (persistence journey) |
-| AC-F05-08 | UI: summary page shows counts/percent/average; empty, loading and error states present |
+| AC-F05-08 | UI: summary page shows response count, option counts/percent and rating distribution/average under stable testids (`summary-response-count`, `option-count-{optionId}`, `option-percent-{optionId}`, `rating-count-{questionId}-{level}`, `rating-average-{questionId}`); empty, loading and error states present |
+| AC-F05-09 | Largest-remainder rounding is distribution-safe: option percentages of any response distribution sum to exactly 100.0 (verified on a 300-vote fixture where naive rounding sums to 99.7) |
+| AC-F05-10 | UI: summary shows an "Updated at" timestamp (`summary-updated-at`) and a Refresh control (`summary-refresh`); activating Refresh re-fetches and re-renders the aggregates |
+| AC-F05-11 | Summary response includes `generatedAt` (ISO-8601) and is sent with `Cache-Control: no-store` |
+| AC-F05-12 | UI: a failed summary fetch renders an error state (`summary-error`) with a Retry control (`summary-retry`); Retry re-issues the request and renders the data on success |
+| AC-F05-13 | UI: below a 600 px viewport the summary stacks in a single column — each option's count and percent stacked under its label — with no horizontal scrolling, and rating questions render all levels 1–5 with labels |
 
 ### Definition of Done (feature)
 Product DoD plus: aggregation function covered by unit tests with the fixture above; TC-F05-06 and 07 written failing first; PR reviewed by B with a specific check (e.g. "recomputed percentages by hand for the fixture").
@@ -475,3 +482,4 @@ Product DoD plus: aggregation function covered by unit tests with the fixture ab
 | Version | Date | Change | Reason |
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial contract | – |
+| v0.2 | 2026-11-14 | F-05 revised: largest-remainder percent rule (AC-02, new AC-09), freshness `generatedAt` + `no-store` (new AC-11), Refresh/Updated-at and error/Retry UI (new AC-10, 12), stable testids + responsive layout (AC-08, new AC-13) | #6 change request |

@@ -19,9 +19,9 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 | F-02 | 10 | 14 |
 | F-03 | 9 | 11 |
 | F-04 | 13 | 17 |
-| F-05 | 8 | 9 |
+| F-05 | 13 | 18 |
 | System (TEST-01) | – | 13 |
-| **Total** | **51** | **79** |
+| **Total** | **56** | **88** |
 
 ## 3. System-level tests (Issue #07, branch `test/issue-07-sprint1-integration-e2e`)
 
@@ -115,14 +115,19 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F04-11 | TC-F04-14 | `tests/api/f04-api.test.js`: TC-F04-14 | Pass |
 | AC-F04-12 | TC-F04-15 | `tests/api/f04-api.test.js`: TC-F04-15 | Pass |
 | AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; `e2e/f04.spec.js`: TC-F04-16 (playwright 1 passed, 10.2s) | Pass |
-| AC-F05-01 | TC-F05-01, 02 | | |
-| AC-F05-02 | TC-F05-01, 03 | | |
+| AC-F05-01 | TC-F05-01, 02, 12, 13 | | |
+| AC-F05-02 | TC-F05-01, 03, 10, 12 | | |
 | AC-F05-03 | TC-F05-01, 04 | | |
-| AC-F05-04 | TC-F05-05 | | |
+| AC-F05-04 | TC-F05-05, 13 | | |
 | AC-F05-05 | TC-F05-06 | | |
 | AC-F05-06 | TC-F05-07 | | |
 | AC-F05-07 | TC-F05-08 | | |
-| AC-F05-08 | TC-F05-09 | | |
+| AC-F05-08 | TC-F05-09, 15 | | |
+| AC-F05-09 | TC-F05-03, 10, 12 | | |
+| AC-F05-10 | TC-F05-16 | | |
+| AC-F05-11 | TC-F05-11 | | |
+| AC-F05-12 | TC-F05-17 | | |
+| AC-F05-13 | TC-F05-18, 19 | | |
 
 ## 7. TDD log (fill during implementation)
 
@@ -238,16 +243,27 @@ Each test links to its AC (`feature-specs.md`).
 |---|---|---|---|---|---|
 | TC-F05-01 | 01, 02, 03 | Unit | 3 responses: topic Git, Git, Testing; ratings 3, 4, 5 | `aggregate()` | count 3; Git 2, Testing 1, CI/CD 0; distribution 3/4/5 = 1 each |
 | TC-F05-02 | 01 | API/DB | same data stored via API | GET summary | equals TC-01 expectation |
-| TC-F05-03 | 02 | Unit | counts 1, 1, 1 of 3; counts 2, 1 | percent calculation | 33.3 ×3; 66.7 and 33.3 |
+| TC-F05-03 | 02, 09 | Unit | counts 1, 1, 1 of 3; counts 2, 1 | percent calculation | 33.4, 33.3, 33.3 and 66.7, 33.3; each set sums to exactly 100.0 |
 | TC-F05-04 | 03 | Unit | ratings 1, 2 / 3, 4, 5 / 5, 5, 4 | average | 1.50 / 4.00 / 4.67 |
 | TC-F05-05 | 04 | API | `S-PUB` with no responses | GET summary | 200; zeros; `average` null |
 | TC-F05-06 | 05 | API | owner2 session on owner1 survey; respondent session; no session | GET summary | 403 / 403 / 401; no summary data |
 | TC-F05-07 | 06 | API | summary with 2 responses | inspect JSON keys recursively | no `respondentId`, `email`, `displayName`, `responseId`, `answers` |
 | TC-F05-08 | 07 | API/DB | summary count n; respondent2 submits | GET summary again | count n+1; distributions updated |
-| TC-F05-09 | 08 | E2E | survey with and without responses | open summary page | values rendered; empty state "No responses yet" |
+| TC-F05-09 | 08 | E2E | DB fixture survey mirroring `S-PUB` with 3 responses; seeded survey with none | open both summary pages | question texts shown; `summary-response-count` reads "3 responses"; `option-count-*`/`option-percent-*` exact (zero-vote option `0%`/`0.0%`); empty survey shows "No responses yet" |
+| TC-F05-10 | 02, 09 | Unit | 11 options: counts 31 × 9, 21 and a zero-vote option (total 300) | `aggregate()` percent | percentages [10.4 ×3, 10.3 ×6, 7, 0] sum to exactly 100.0 (naive rounding gives 99.7); zero-vote option listed with `0` |
+| TC-F05-11 | 11 | API | owner session; 3-response fixture | GET summary | 200 body has ISO-8601 `generatedAt`; response header `Cache-Control: no-store` |
+| TC-F05-12 | 01, 09 | API/DB | fixture with 300 votes (counts 31 × 9 + 21) stored; prisma delegates spied | GET summary | percent sums to exactly 100.0 and zero-vote option `0`; bounded grouped queries (≤ 8 tracked calls, no per-response/per-answer row reads) |
+| TC-F05-13 | 01, 04 | Unit | ratings 3, 4, 5; then zero responses | `aggregate()` | distribution keys 1–5 = 0,0,1,1,1 with average 4.00; empty → counts/percent 0, distribution all 0, average `null` |
+| TC-F05-14 | – | – | reserved for a follow-up change (deliberately unused in v0.2) | – | – |
+| TC-F05-15 | 08 | E2E | DB fixture with 3 responses (votes 2/1/0, ratings 4, 5, 2) | open summary page | `summary-response-count` = "3 responses"; `option-count-*` 2/1/0; `option-percent-*` 66.7%/33.3%/0.0%; `rating-count-*` 0,1,0,1,1; `rating-average-*` 3.67 |
+| TC-F05-16 | 10 | E2E | summary page already loaded | read `summary-updated-at`; click `summary-refresh` | ISO timestamp rendered; refresh re-fetches and re-renders without `summary-error` (NFR-09) |
+| TC-F05-17 | 12 | E2E | summary API intercepted → 500 on first call | open summary, then click `summary-retry` | `summary-error` shown first; retry re-issues the request and the data renders (NFR-09) |
+| TC-F05-18 | 13 | E2E | fixture survey with responses; viewport 375 × 800 | open summary page | no horizontal scroll; question cards in one column; `option-count-*` stacked below its label (same left edge as `option-percent-*`) |
+| TC-F05-19 | 13 | E2E | fixture rating question (distribution 0,1,0,1,1) | open summary page | all levels 1–5 rendered with `rating-count-{questionId}-{1..5}` showing 0,1,0,1,1, zeros included |
 
 ## 12. Revision history
 
 | Version | Date | Change | Reason |
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial version | – |
+| v0.2 | 2026-11-14 | F-05 v0.2: counts 8/9 → 13/18 (totals 56/88); TC-F05-03 and TC-F05-09 revised; TC-F05-10..13 and TC-F05-15..19 added; TC-F05-14 reserved | #6 change request |
