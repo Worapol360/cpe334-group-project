@@ -19,9 +19,9 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 | F-02 | 10 | 14 |
 | F-03 | 9 | 11 |
 | F-04 | 13 | 17 |
-| F-05 | 8 | 9 |
+| F-05 | 14 | 21 |
 | System (TEST-01) | – | 13 |
-| **Total** | **51** | **79** |
+| **Total** | **57** | **91** |
 
 ## 3. System-level tests (Issue #07, branch `test/issue-07-sprint1-integration-e2e`)
 
@@ -35,7 +35,7 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 | TC-INT-06 | NFR-07 | API | fault injected into a handler | call endpoint | 500 `INTERNAL_ERROR`, no stack/SQL/path in body |
 | TC-INT-07 | FR-11, BR-07 | API/DB | respondent1 and 2 submit different answers | owner summary | counts match both; no identifiers in JSON |
 | TC-E2E-01 | FR-01..FR-11 | E2E | seeded users | owner logs in, creates + publishes; logs out; respondent logs in, answers, sees confirmation; logs out; owner opens summary | summary shows 1 response and correct counts |
-| TC-E2E-02 | BR-01 | E2E | respondent already answered | open survey again / try to resubmit | form disabled or 409 error shown; no second response |
+| TC-E2E-02 | BR-01 | E2E | respondent already answered | open survey again / try to resubmit | form disabled and 409 DUPLICATE_RESPONSE on resubmit attempt; no second response |
 | TC-E2E-03 | FR-04, NFR-03 | E2E + API | respondent logged in | open `/owner/surveys` by URL; call owner API from the page context | "not allowed" page; API returns 403 |
 | TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | – | invalid login; valid login; logout; back button | error shown; logged in; login page; protected data not shown |
 | TC-MAN-01 | NFR-08 | Manual | clean clone, only README | follow README (≤ 6 commands) | app runs, tests run; time and commands recorded |
@@ -54,35 +54,35 @@ Version v0.1 – 2026-11-10. Feature-level test specifications are in §11. This
 
 A feature or the sprint is **Done** only when all hold:
 
-- [ ] Required behaviour implemented as specified in the feature contract (UI, API, data).
-- [ ] All planned tests for the feature executed; meaningful tests passing; failed/skipped tests disclosed.
-- [ ] Negative, boundary, and role/ownership tests included and passing.
-- [ ] Persistence verified through the real database (not mock-only).
-- [ ] TDD evidence kept for rule work (failing → passing, commit IDs).
+- [x] Required behaviour implemented as specified in the feature contract (UI, API, data).
+- [x] All planned tests for the feature executed; meaningful tests passing; failed/skipped tests disclosed.
+- [x] Negative, boundary, and role/ownership tests included and passing.
+- [x] Persistence verified through the real database (not mock-only).
+- [x] TDD evidence kept for rule work (failing → passing, commit IDs).
 - [ ] PR reviewed by the teammate with a specific check/finding; author did not approve own PR.
-- [ ] Feature merged into `sprint1-staging`; integration and system tests (TEST-01) pass there.
+- [x] Feature merged into `sprint1-staging`; integration and system tests (TEST-01) pass there.
 - [ ] Release PR `sprint1-staging → main` reviewed and merged; release tagged `v0.1.0-sprint1`.
-- [ ] README, `.env.example`, contracts, traceability and results table are up to date.
-- [ ] No secrets in Git; synthetic data only.
+- [x] README, `.env.example`, contracts, traceability and results table are up to date.
+- [x] No secrets in Git; synthetic data only.
 - [ ] Incomplete work and limitations disclosed in Part F.
 
 ## 6. AC-to-test results table (fill after execution)
 
-Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / skip: `<..>`
+Release commit: `34c51d6` · Command: `npm run test:unit && npm run test:api && npx playwright test` · Total: 120 automated (18 unit + 79 API/integration + 23 E2E) + 2 manual · Pass: 122 / Fail: 0 / Skip: 0
 
 | AC | Planned tests | Actual file / test name | Result |
 |---|---|---|---|
-| AC-F01-01 | TC-F01-01, 02 | | |
-| AC-F01-02 | TC-F01-03, 04 | | |
-| AC-F01-03 | TC-F01-06 | | |
-| AC-F01-04 | TC-F01-07 | | |
-| AC-F01-05 | TC-F01-08 | | |
-| AC-F01-06 | TC-F01-09, 14 | | |
-| AC-F01-07 | TC-F01-10 | | |
-| AC-F01-08 | TC-F01-12, 13 | | |
-| AC-F01-09 | TC-F01-05 | | |
-| AC-F01-10 | TC-F01-11 | | |
-| AC-F01-11 | TC-F01-15 | | |
+| AC-F01-01 | TC-F01-01, 02 | `tests/api/f01-api.test.js`: TC-F01-01, TC-F01-02 | Pass |
+| AC-F01-02 | TC-F01-03, 04 | `tests/api/f01-api.test.js`: TC-F01-03, TC-F01-04 | Pass |
+| AC-F01-03 | TC-F01-06 | `tests/api/f01-api.test.js`: TC-F01-06 | Pass |
+| AC-F01-04 | TC-F01-07 | `tests/api/f01-api.test.js`: TC-F01-07 | Pass |
+| AC-F01-05 | TC-F01-08 | `tests/api/f01-api.test.js`: TC-F01-08 | Pass |
+| AC-F01-06 | TC-F01-09, 14 | `tests/api/f01-api.test.js`: TC-F01-09, TC-F01-14 | Pass |
+| AC-F01-07 | TC-F01-10 | `tests/unit/f01-unit.test.js`: TC-F01-10; `tests/api/f01-api.test.js`: TC-F01-10 | Pass |
+| AC-F01-08 | TC-F01-12, 13 | `e2e/f01.spec.js`: TC-F01-12, TC-F01-13 | Pass |
+| AC-F01-09 | TC-F01-05 | `tests/api/f01-api.test.js`: TC-F01-05 | Pass |
+| AC-F01-10 | TC-F01-11 | `tests/api/f01-api.test.js`: TC-F01-11 | Pass |
+| AC-F01-11 | TC-F01-15 | `tests/api/f01-api.test.js`: TC-F01-15 | Pass |
 | AC-F02-01 | TC-F02-01, 02 | `tests/api/f02-api.test.js`: TC-F02-01, TC-F02-02 | Pass |
 | AC-F02-02 | TC-F02-03 | `tests/unit/f02-unit.test.js`: TC-F02-03; `tests/api/f02-api.test.js`: TC-F02-03 | Pass |
 | AC-F02-03 | TC-F02-04 | `tests/unit/f02-unit.test.js`: TC-F02-04 | Pass |
@@ -93,52 +93,76 @@ Release commit: `<sha>` · Command: `<test command>` · Total / pass / fail / sk
 | AC-F02-08 | TC-F02-11 | `tests/api/f02-api.test.js`: TC-F02-11 | Pass |
 | AC-F02-09 | TC-F02-13, 14 | Manual verification in client UI (`/owner/surveys/new`, `/owner/surveys`, `/owner/surveys/:id`); automated E2E consolidated under TEST-01 (Issue #7) | Pass (Manual) |
 | AC-F02-10 | TC-F02-12 | `tests/api/f02-api.test.js`: TC-F02-12 | Pass |
-| AC-F03-01 | TC-F03-01 | | |
-| AC-F03-02 | TC-F03-02, 04 | | |
-| AC-F03-03 | TC-F03-03, 04 | | |
-| AC-F03-04 | TC-F03-05 | | |
-| AC-F03-05 | TC-F03-06 | | |
-| AC-F03-06 | TC-F03-07, 08 | | |
-| AC-F03-07 | TC-F03-09 | | |
-| AC-F03-08 | TC-F03-10 | | |
-| AC-F03-09 | TC-F03-11 | | |
-| AC-F04-01 | TC-F04-01 | | |
-| AC-F04-02 | TC-F04-02 | | |
-| AC-F04-03 | TC-F04-03 | | |
-| AC-F04-04 | TC-F04-04 | | |
-| AC-F04-05 | TC-F04-05 | | |
-| AC-F04-06 | TC-F04-06, 07 | | |
-| AC-F04-07 | TC-F04-08 | | |
-| AC-F04-08 | TC-F04-09, 10 | | |
-| AC-F04-09 | TC-F04-11 | | |
-| AC-F04-10 | TC-F04-12, 13 | | |
-| AC-F04-11 | TC-F04-14 | | |
-| AC-F04-12 | TC-F04-15 | | |
-| AC-F04-13 | TC-F04-16, 17 | | |
-| AC-F05-01 | TC-F05-01, 02 | | |
-| AC-F05-02 | TC-F05-01, 03 | | |
-| AC-F05-03 | TC-F05-01, 04 | | |
-| AC-F05-04 | TC-F05-05 | | |
-| AC-F05-05 | TC-F05-06 | | |
-| AC-F05-06 | TC-F05-07 | | |
-| AC-F05-07 | TC-F05-08 | | |
-| AC-F05-08 | TC-F05-09 | | |
+| AC-F03-01 | TC-F03-01 | `tests/api/f03-api.test.js`: TC-F03-01 | Pass |
+| AC-F03-02 | TC-F03-02, 04 | `tests/unit/f03-unit.test.js`: TC-F03-04; `tests/api/f03-api.test.js`: TC-F03-02 | Pass |
+| AC-F03-03 | TC-F03-03, 04 | `tests/unit/f03-unit.test.js`: TC-F03-04; `tests/api/f03-api.test.js`: TC-F03-03 | Pass |
+| AC-F03-04 | TC-F03-05 | `tests/api/f03-api.test.js`: TC-F03-05 | Pass |
+| AC-F03-05 | TC-F03-06 | `tests/api/f03-api.test.js`: TC-F03-06 | Pass |
+| AC-F03-06 | TC-F03-07, 08 | `tests/api/f03-api.test.js`: TC-F03-07, TC-F03-08 | Pass |
+| AC-F03-07 | TC-F03-09 | `tests/unit/f03-unit.test.js`: TC-F03-09 | Pass |
+| AC-F03-08 | TC-F03-10 | `tests/unit/f03-unit.test.js`: TC-F03-10 | Pass |
+| AC-F03-09 | TC-F03-11 | `e2e/f03.spec.js`: TC-F03-11 (playwright 1 passed, 4.4s) | Pass |
+| AC-F04-01 | TC-F04-01 | `tests/api/f04-api.test.js`: TC-F04-01 | Pass |
+| AC-F04-02 | TC-F04-02 | `tests/api/f04-api.test.js`: TC-F04-02 | Pass |
+| AC-F04-03 | TC-F04-03 | `tests/api/f04-api.test.js`: TC-F04-03 | Pass |
+| AC-F04-04 | TC-F04-04 | `tests/api/f04-api.test.js`: TC-F04-04 | Pass |
+| AC-F04-05 | TC-F04-05 | `tests/api/f04-api.test.js`: TC-F04-05 | Pass |
+| AC-F04-06 | TC-F04-06, 07 | `tests/unit/f04-unit.test.js`: TC-F04-06; `tests/api/f04-api.test.js`: TC-F04-07 | Pass |
+| AC-F04-07 | TC-F04-08 | `tests/unit/f04-unit.test.js`: TC-F04-08 | Pass |
+| AC-F04-08 | TC-F04-09, 10 | `tests/unit/f04-unit.test.js`: TC-F04-09; `tests/api/f04-api.test.js`: TC-F04-10 | Pass |
+| AC-F04-09 | TC-F04-11 | `tests/api/f04-api.test.js`: TC-F04-11 | Pass |
+| AC-F04-10 | TC-F04-12, 13 | `tests/api/f04-api.test.js`: TC-F04-12, TC-F04-13 | Pass |
+| AC-F04-11 | TC-F04-14 | `tests/api/f04-api.test.js`: TC-F04-14 | Pass |
+| AC-F04-12 | TC-F04-15 | `tests/api/f04-api.test.js`: TC-F04-15 | Pass |
+| AC-F04-13 | TC-F04-16, 17 | `tests/api/f04-api.test.js`: TC-F04-17; `e2e/f04.spec.js`: TC-F04-16 (playwright 1 passed, 1.6s) | Pass |
+| AC-F05-01 | TC-F05-01, 02, 12, 13 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-13; `tests/api/f05-api.test.js`: TC-F05-02, TC-F05-12 | Pass |
+| AC-F05-02 | TC-F05-01, 03, 10, 12 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-03, TC-F05-10; `tests/api/f05-api.test.js`: TC-F05-12 | Pass |
+| AC-F05-03 | TC-F05-01, 04 | `tests/unit/f05-unit.test.js`: TC-F05-01, TC-F05-04 | Pass |
+| AC-F05-04 | TC-F05-05, 13 | `tests/unit/f05-unit.test.js`: TC-F05-13; `tests/api/f05-api.test.js`: TC-F05-05 | Pass |
+| AC-F05-05 | TC-F05-06 | `tests/api/f05-api.test.js`: TC-F05-06 | Pass |
+| AC-F05-06 | TC-F05-07 | `tests/api/f05-api.test.js`: TC-F05-07 | Pass |
+| AC-F05-07 | TC-F05-08 | `tests/api/f05-api.test.js`: TC-F05-08 | Pass |
+| AC-F05-08 | TC-F05-09, 15 | `e2e/f05.spec.js`: TC-F05-09, TC-F05-15 | Pass |
+| AC-F05-09 | TC-F05-03, 10, 12 | `tests/unit/f05-unit.test.js`: TC-F05-03, TC-F05-10; `tests/api/f05-api.test.js`: TC-F05-12 | Pass |
+| AC-F05-10 | TC-F05-16, 21 | `e2e/f05.spec.js`: TC-F05-16, TC-F05-21 | Pass |
+| AC-F05-11 | TC-F05-11 | `tests/api/f05-api.test.js`: TC-F05-11 | Pass |
+| AC-F05-12 | TC-F05-17, 22 | `e2e/f05.spec.js`: TC-F05-17, TC-F05-22 | Pass |
+| AC-F05-13 | TC-F05-18, 19 | `e2e/f05.spec.js`: TC-F05-18, TC-F05-19 | Pass |
+| AC-F05-14 | TC-F05-20 | `e2e/f05.spec.js`: TC-F05-20 | Pass |
+
+### System-level test results (TEST-01 / Issue #07)
+
+| Test ID | Requirement | Level | Actual file / test name | Result |
+|---|---|---|---|---|
+| TC-INT-01 | NFR-01, NFR-03, FR-04 | API/DB | `tests/integration/system.test.js`: TC-INT-01 Permission Matrix (14 endpoint × actor cases) | Pass |
+| TC-INT-02 | FR-05..FR-11 | API/DB | `tests/integration/system.test.js`: TC-INT-02 Full Data Journey (create → publish → answer → summary) | Pass |
+| TC-INT-03 | NFR-08 | Integration | `tests/integration/system.test.js`: TC-INT-03 Fresh DB Setup (migrate + seed + health) | Pass |
+| TC-INT-04 | NFR-06 | API | `tests/integration/system.test.js`: TC-INT-04 Session Expiry & Logout Guard (2 cases) | Pass |
+| TC-INT-05 | NFR-04, BR-01 | API/DB | `tests/integration/system.test.js`: TC-INT-05 Cross-Respondent Concurrency (2 respondents × 3 parallel POSTs) | Pass |
+| TC-INT-06 | NFR-07 | API | `tests/integration/system.test.js`: TC-INT-06 Fault Injection Error Masking (500 safe body) | Pass |
+| TC-INT-07 | FR-11, BR-07 | API/DB | `tests/integration/system.test.js`: TC-INT-07 Privacy in Summary (2 respondents, recursive key check) | Pass |
+| TC-E2E-01 | FR-01..FR-11 | E2E | `e2e/system.spec.js`: TC-E2E-01 Full User Journey (owner create+publish → respondent answer → owner summary) | Pass (2.6s) |
+| TC-E2E-02 | BR-01 | E2E | `e2e/system.spec.js`: TC-E2E-02 Duplicate Prevention UI (answered badge + disabled form on revisit + 409 DUPLICATE_RESPONSE on resubmit) | Pass (1.1s) |
+| TC-E2E-03 | FR-04, NFR-03 | E2E + API | `e2e/system.spec.js`: TC-E2E-03 Role Restriction (respondent URL navigation shows Not Allowed; API 403) | Pass (0.8s) |
+| TC-E2E-04 | FR-01, FR-02, NFR-06 | E2E | `e2e/system.spec.js`: TC-E2E-04 Login/Logout/Back-Button (invalid login error, valid login, logout, back button guard) | Pass (1.1s) |
+| TC-MAN-01 | NFR-08 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-01-readme-walkthrough.md` | Pass (6 commands executed, 18 unit + 79 API pass) |
+| TC-MAN-02 | NFR-09 | Manual | `docs/sprints/sprint-1/manual-tests/TC-MAN-02-ui-state-checklist.md` | Pass (33/33 states checked across all screens) |
 
 ## 7. TDD log (fill during implementation)
 
 | Rule / AC | Test | Failing commit + date | Failing output summary | Fix commit + date | Passing output summary |
 |---|---|---|---|---|---|
-| BR-01 / AC-F04-03 | TC-F04-03 | | | | |
-| Ownership / AC-F04-10 | TC-F04-12 | | | | |
-| BR-03 / AC-F03-02 | TC-F03-02 | | | | |
-| NFR-02 / AC-F01-06 | TC-F01-09 | | | | |
+| BR-01 / AC-F04-03 | TC-F04-03 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (409 DUPLICATE_RESPONSE)` |
+| Ownership / AC-F04-10 | TC-F04-12 | `081a52a` (2026-11-13) | `AssertionError: expected 404 to be 403 (endpoint missing)` | `fe2835e` (2026-11-13) | `Pass (403 FORBIDDEN, body lacks answers)` |
+| BR-03 / AC-F03-02 | TC-F03-02 | `c66ca7b` (2026-11-13) | `AssertionError: expected 404 to be 409 (endpoint missing)` | `fd33524` (2026-11-13) | `Pass (409 INVALID_STATE_TRANSITION)` |
+| Role Guard / AC-F01-07 | TC-F01-10 | `996b3c1` (2026-11-11) | `Error: checkRole is not implemented` | `1f771c2` (2026-11-11) | `Pass (requireRole accepts owner, rejects respondent)` |
 
 ## 8. Git workflow evidence (fill for two completed Issues)
 
 | Issue | Feature / AC | Branch | Author | Reviewer | Review note (specific check) | PR → staging | Release PR → main | Commit IDs/dates (spec → tests → impl) |
 |---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
-| | | | | | | | | |
+| #05 | F-04 / AC-F04-01..13 | `feature/issue-05-sprint1-response-submit` | Student B (aranedlek) | Student A (Worapol360) | Verified strict integer validation in domain/response.js, DB constraint duplicate guard, Playwright run evidence, raw DoD output logging | PR #12 (merged `420b60a`) | – | Spec: `docs/sprints/sprint-1/feature-specs.md`<br>Tests: `081a52a` (2026-11-13)<br>Impl: `fe2835e` (2026-11-13)<br>Fixes: `423914c`, `fc254bd` (2026-11-14) |
+| #06 | F-05 / AC-F05-01..14 | `feature/issue-06-sprint1-summary` | Student A (Worapol360) | Student B (aranedlek) | Verified largest-remainder sum = 100.0, zero-vote option handling, HTTP 500 retry behavior, and responsive single-column layout | PR #13 (merged `93bc150`) | – | Spec: `789e8d8`, `889cb35` (2026-11-14)<br>Tests: `a2e0f9f`, `77ce96f`, `b19f257` (2026-11-14)<br>Impl: `bdbdd1a`, `f18cb71`, `dee99ce` (2026-11-14) |
 
 Final board status screenshot and release tag/commit: `<..>`
 
@@ -146,8 +170,8 @@ Final board status screenshot and release tag/commit: `<..>`
 
 | Student | Specs | Tests | Code | Reviews | Pair work (Issue/PR links) |
 |---|---|---|---|---|---|
-| A | | | | | |
-| B | | | | | |
+| A (Worapol360) | F-01, F-03, F-05 | TC-F01-*, TC-F03-*, TC-F05-* | F-01, F-03, F-05 | Reviewed PR #10 (F-02), PR #12 (F-04) | [PR #11](https://github.com/Worapol360/cpe334-group-project/pull/11), [PR #13](https://github.com/Worapol360/cpe334-group-project/pull/13) |
+| B (aranedlek) | F-02, F-04, TEST-01 | TC-F02-*, TC-F04-*, TC-INT-*, TC-E2E-*, TC-MAN-* | F-02, F-04 | Reviewed PR #11 (F-03), PR #13 (F-05) | [PR #10](https://github.com/Worapol360/cpe334-group-project/pull/10), [PR #12](https://github.com/Worapol360/cpe334-group-project/pull/12) |
 
 AI-use declaration: tools used (`opencode`, model `<..>`), tasks assisted (`<drafting contracts, generating tests/code, …>`); all output reviewed and run by the students.
 
@@ -238,16 +262,31 @@ Each test links to its AC (`feature-specs.md`).
 |---|---|---|---|---|---|
 | TC-F05-01 | 01, 02, 03 | Unit | 3 responses: topic Git, Git, Testing; ratings 3, 4, 5 | `aggregate()` | count 3; Git 2, Testing 1, CI/CD 0; distribution 3/4/5 = 1 each |
 | TC-F05-02 | 01 | API/DB | same data stored via API | GET summary | equals TC-01 expectation |
-| TC-F05-03 | 02 | Unit | counts 1, 1, 1 of 3; counts 2, 1 | percent calculation | 33.3 ×3; 66.7 and 33.3 |
+| TC-F05-03 | 02, 09 | Unit | counts 1, 1, 1 of 3; counts 2, 1 | percent calculation | 33.4, 33.3, 33.3 and 66.7, 33.3; each set sums to exactly 100.0 |
 | TC-F05-04 | 03 | Unit | ratings 1, 2 / 3, 4, 5 / 5, 5, 4 | average | 1.50 / 4.00 / 4.67 |
 | TC-F05-05 | 04 | API | `S-PUB` with no responses | GET summary | 200; zeros; `average` null |
 | TC-F05-06 | 05 | API | owner2 session on owner1 survey; respondent session; no session | GET summary | 403 / 403 / 401; no summary data |
 | TC-F05-07 | 06 | API | summary with 2 responses | inspect JSON keys recursively | no `respondentId`, `email`, `displayName`, `responseId`, `answers` |
 | TC-F05-08 | 07 | API/DB | summary count n; respondent2 submits | GET summary again | count n+1; distributions updated |
-| TC-F05-09 | 08 | E2E | survey with and without responses | open summary page | values rendered; empty state "No responses yet" |
+| TC-F05-09 | 08 | E2E | DB fixture survey mirroring `S-PUB` with 3 responses; seeded survey with none | open both summary pages | question texts shown; `summary-response-count` reads "3 responses"; `option-count-*`/`option-percent-*` exact (zero-vote option `0%`/`0.0%`); empty survey shows "No responses yet" |
+| TC-F05-10 | 02, 09 | Unit | 11 options: counts 31 × 9, 21 and a zero-vote option (total 300) | `aggregate()` percent | percentages [10.4 ×3, 10.3 ×6, 7, 0] sum to exactly 100.0 (naive rounding gives 99.7); zero-vote option listed with `0` |
+| TC-F05-11 | 11 | API | owner session; 3-response fixture | GET summary | 200 body has ISO-8601 `generatedAt`; response header `Cache-Control: no-store` |
+| TC-F05-12 | 01, 09 | API/DB | fixture with 300 votes (counts 31 × 9 + 21) stored; prisma delegates spied | GET summary | percent sums to exactly 100.0 and zero-vote option `0`; bounded grouped queries (≤ 8 tracked calls, no per-response/per-answer row reads) |
+| TC-F05-13 | 01, 04 | Unit | ratings 3, 4, 5; then zero responses | `aggregate()` | distribution keys 1–5 = 0,0,1,1,1 with average 4.00; empty → counts/percent 0, distribution all 0, average `null` |
+| TC-F05-14 | – | – | reserved for a follow-up change (deliberately unused in v0.2) | – | – |
+| TC-F05-15 | 08 | E2E | DB fixture with 3 responses (votes 2/1/0, ratings 4, 5, 2) | open summary page | `summary-response-count` = "3 responses"; `option-count-*` 2/1/0; `option-percent-*` 66.7%/33.3%/0.0%; `rating-count-*` 0,1,0,1,1; `rating-average-*` 3.67 |
+| TC-F05-16 | 10 | E2E | summary page already loaded | read `summary-updated-at`; click `summary-refresh` | ISO timestamp rendered; refresh re-fetches and re-renders without `summary-error` (NFR-09) |
+| TC-F05-17 | 12 | E2E | summary API intercepted → 500 on first call | open summary, then click `summary-retry` | `summary-error` shown first; retry re-issues the request and the data renders (NFR-09) |
+| TC-F05-18 | 13 | E2E | fixture survey with responses; viewport 375 × 800 | open summary page | no horizontal scroll; question cards in one column; `option-count-*` stacked below its label (same left edge as `option-percent-*`) |
+| TC-F05-19 | 13 | E2E | fixture rating question (distribution 0,1,0,1,1) | open summary page | all levels 1–5 rendered with `rating-count-{questionId}-{1..5}` showing 0,1,0,1,1, zeros included |
+| TC-F05-20 | 14 | E2E | single_choice question with options A, B, C; four surveys created directly in the test DB with 0, 1 (A), 3 (A,A,B) and 7 (A,A,A,B,B,B,C) responses | open each summary page | `summary-response-count` exact ("0/1/3 responses"); `option-count-*` exact 0/0/0, 1/0/0, 2/1/0, 3/3/1; `option-percent-*` exact 0.0%/0.0%/0.0%, 100.0%/0.0%/0.0%, 66.7%/33.3%/0.0%, 42.9%/42.8%/14.3% (largest-remainder rule); all displayed percents of the question parsed and summed = 100.0 (0 when responseCount = 0) |
+| TC-F05-21 | 10 | E2E | summary request intercepted: (a) HTTP 500 on first call, (b) network abort on first call, (c) 403, (d) 404 | open summary page; for (a)/(b) click `summary-retry` once requests succeed | (a)/(b) `summary-error` + `summary-retry` visible, message human-readable (no stack, no JSON); retry renders the data, `summary-error` gone, `page.url()` unchanged and no full page reload (window marker kept); (c) "not allowed" message and no `summary-retry`; (d) "not found" message and no `summary-retry` |
+| TC-F05-22 | 12 | E2E | survey whose option labels include 200 characters with spaces and 200 characters without spaces; viewports 375 × 667 and 1280 × 800 | open summary page at each viewport | `document.documentElement.scrollWidth <= window.innerWidth`; each long label element shows its full text (`toHaveText`, no truncation) and its bounding box lies inside the viewport width; count and percent elements visible |
 
 ## 12. Revision history
 
 | Version | Date | Change | Reason |
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial version | – |
+| v0.2 | 2026-11-14 | F-05 v0.2: counts 8/9 → 13/18 (totals 56/88); TC-F05-03 and TC-F05-09 revised; TC-F05-10..13 and TC-F05-15..19 added; TC-F05-14 reserved | #6 change request |
+| v0.3 | 2026-11-14 | F-05 v0.3: counts 13/18 → 14/21 (totals 57/91); TC-F05-20 (varied response counts), TC-F05-21 (retry variants), TC-F05-22 (long option labels) added; §6 rows for AC-F05-10, 12, 14 updated | Change request 2 from teammate review |

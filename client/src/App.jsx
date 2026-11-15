@@ -4,7 +4,10 @@ import Login from './pages/Login.jsx';
 import OwnerSurveys from './pages/OwnerSurveys.jsx';
 import CreateSurvey from './pages/CreateSurvey.jsx';
 import OwnerSurveyDetail from './pages/OwnerSurveyDetail.jsx';
+import OwnerSurveySummary from './pages/OwnerSurveySummary.jsx';
 import Surveys from './pages/Surveys.jsx';
+import SurveyDetail from './pages/SurveyDetail.jsx';
+import ResponseDetail from './pages/ResponseDetail.jsx';
 import NotAllowed from './pages/NotAllowed.jsx';
 
 function Loading() {
@@ -61,10 +64,34 @@ export default function App() {
             }
           />
           <Route
+            path="/owner/surveys/:id/summary"
+            element={
+              <RequireAuth role="owner">
+                <OwnerSurveySummary />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/surveys"
             element={
               <RequireAuth role="respondent">
                 <Surveys />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/surveys/:id"
+            element={
+              <RequireAuth role="respondent">
+                <SurveyDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/responses/:id"
+            element={
+              <RequireAuth role="respondent">
+                <ResponseDetail />
               </RequireAuth>
             }
           />

@@ -277,10 +277,135 @@ Product DoD plus: TC-F04-03, 04, 05, 07, 10, 12 written failing first (TDD evide
 ### Completion evidence
 | Item | Value |
 |---|---|
-| Failing-test commit | |
-| Implementation commit | |
-| Test command / result / counts | |
-| PR link, reviewer, review note | |
+| Failing-test commit | `081a52a` (TC-F04-01..15, 17 written failing first) |
+| Implementation commit | `fe2835e` (review fixes in `423914c` and follow-up) |
+| Test command / result / counts | Unit: `npm run test:unit` (3 passed for F-04, 100%)<br>API: `npm run test:api` (13 passed for F-04, 100%)<br>E2E: `cd e2e && npx playwright test f04` (1 passed, 10.2s)<br>Total F-04 automated tests: 17 passed (51 passed across full API suite) |
+| PR link, reviewer, review note | Pending review by Student A (Worapol360) |
+
+#### DoD Verification & Test Outputs
+
+##### 1. Concurrency (TC-F04-04 20-run loop without flake)
+Command:
+```powershell
+1..20 | ForEach-Object { $i = $_; npx vitest run tests/api/f04-api.test.js -t "TC-F04-04" > $null 2>&1; if ($LASTEXITCODE -eq 0) { Write-Host "Run $i/20: PASSED" } else { Write-Host "Run $i/20: FAILED"; break } }
+```
+Output:
+```text
+Run 1/20: PASSED
+Run 2/20: PASSED
+Run 3/20: PASSED
+Run 4/20: PASSED
+Run 5/20: PASSED
+Run 6/20: PASSED
+Run 7/20: PASSED
+Run 8/20: PASSED
+Run 9/20: PASSED
+Run 10/20: PASSED
+Run 11/20: PASSED
+Run 12/20: PASSED
+Run 13/20: PASSED
+Run 14/20: PASSED
+Run 15/20: PASSED
+Run 16/20: PASSED
+Run 17/20: PASSED
+Run 18/20: PASSED
+Run 19/20: PASSED
+Run 20/20: PASSED
+```
+
+##### 2. Duplicate Guard via Database Constraint Experiment (Pre-check Removed)
+Experiment: Commented out `findResponseBySurveyAndRespondent` pre-check in `server/src/api/routes/surveys.js` and executed 5 concurrent requests.
+Command:
+```powershell
+npx vitest run tests/api/f04-api.test.js -t "TC-F04-04"
+```
+Output:
+```text
+ RUN  v5.1.0 C:/Users/lenovo/Documents/cpe334-group-project/server
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "feedbackloop_test", schema "public" at "localhost:5433"
+
+3 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+stderr | tests/api/f04-api.test.js
+◇ injected env (13) from .env
+
+stderr | tests/api/f04-api.test.js
+◇ injected env (0) from .env
+
+ ✓ tests/api/f04-api.test.js (13 tests | 12 skipped) 399ms
+   ✓ F-04 Response Submission and Duplicate Prevention API Tests (13)
+     ✓ TC-F04-04: 5 parallel identical submissions -> exactly one 201, four 409; count = 1 393ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 12 skipped (13)
+   Start at  00:25:47
+   Duration  2.06s (import 74%, tests 21%, transform 4%)
+```
+Result: Verified that the PostgreSQL `UNIQUE(survey_id, respondent_id)` constraint catches concurrent submissions, throws Prisma P2002 error, and is handled as `DuplicateResponseError` (409), proving the DB constraint acts as the concurrency safety gate.
+
+##### 3. Fault Injection Transaction Rollback (TC-F04-15)
+Command:
+```powershell
+npx vitest run tests/api/f04-api.test.js -t "TC-F04-15"
+```
+Output:
+```text
+ RUN  v5.1.0 C:/Users/lenovo/Documents/cpe334-group-project/server
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "feedbackloop_test", schema "public" at "localhost:5433"
+
+3 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+stderr | tests/api/f04-api.test.js
+◇ injected env (13) from .env
+
+stderr | tests/api/f04-api.test.js
+◇ injected env (0) from .env
+
+stderr | tests/api/f04-api.test.js > F-04 Response Submission and Duplicate Prevention API Tests > TC-F04-15: fault injected on 2nd answer insert -> safe error; zero response rows
+Error: Database disk fault on second answer insert
+    at Proxy.tx.answer.create (C:/Users/lenovo/Documents/cpe334-group-project/server/tests/api/f04-api.test.js:439:19)
+    at C:/Users/lenovo/Documents/cpe334-group-project/server/src/persistence/responses.js:29:25
+    at async Proxy._transactionWithCallback (C:\Users\lenovo\Documents\cpe334-group-project\server\node_modules\@prisma\client\runtime\library.js:130:8120)
+
+ ✓ tests/api/f04-api.test.js (13 tests | 12 skipped) 346ms
+   ✓ F-04 Response Submission and Duplicate Prevention API Tests (13)
+     ✓ TC-F04-15: fault injected on 2nd answer insert -> safe error; zero response rows 343ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 12 skipped (13)
+   Start at  00:05:14
+   Duration  1.88s (import 76%, tests 20%, transform 4%)
+```
+
+##### 4. E2E UI Flow (TC-F04-16)
+Command:
+```powershell
+cd e2e; npx playwright test f04
+```
+Output:
+```text
+Running 1 test using 1 worker
+
+  ok 1 f04.spec.js:7:1 › TC-F04-16: respondent answers published survey, submits incomplete, sees confirmation, and form is disabled on revisit (2.1s)
+
+  1 passed (10.2s)
+```
 
 ### Revision history
 | Version | Date | Change | Reason |
@@ -309,10 +434,12 @@ Product DoD plus: TC-F04-03, 04, 05, 07, 10, 12 written failing first (TDD evide
 
 **Aggregation rules.**
 * `responseCount` = number of responses for the survey.
-* `single_choice`: for each option `count` and `percent = count / responseCount × 100`, rounded to 1 decimal; options with zero votes are listed; percentages sum to 100 ± 0.1 per rounding (not forced).
+* `single_choice`: for each option `count` and `percent` in percent, rounded to 1 decimal by the **largest-remainder method**: tenths = `floor(count / responseCount × 1000)`, then the remaining tenths are handed out one each to the largest fractional remainders (ties → lower position in the options array). Options with zero votes are listed; percentages sum to exactly 100.0 whenever `responseCount > 0`, and are all 0.0 when it is 0.
 * `rating`: `distribution` for values 1–5 (zeros included), `average` rounded to 2 decimals, `null` when no responses.
 * No responses: `responseCount = 0`, all counts 0, percent 0, average `null` (HTTP 200).
 * Summary is allowed for any status of an owned survey.
+
+**Freshness.** The summary payload carries `generatedAt` (ISO-8601 time the aggregates were computed for that request) and the endpoint responds with `Cache-Control: no-store`, so an owner never reads a cached aggregate; the UI shows an "Updated at" timestamp with a Refresh control that re-fetches the summary.
 
 **Privacy (BR-07).** The body contains no respondent id, name, email, response id or per-response answer list.
 
@@ -327,13 +454,19 @@ No schema change. Aggregates are computed from `responses`/`answers` by grouped 
 | AC | Criterion |
 |---|---|
 | AC-F05-01 | For a fixture of 3 responses, `responseCount` and every option count/rating distribution equal the expected values |
-| AC-F05-02 | Option percentages are `count / responseCount × 100` rounded to 1 decimal; zero-vote options are listed |
+| AC-F05-02 | Option percentages are `count / responseCount × 100` rounded to 1 decimal by the largest-remainder method so they sum to exactly 100.0 (all 0.0 when `responseCount` is 0); zero-vote options are listed |
 | AC-F05-03 | Rating average is the mean rounded to 2 decimals (e.g. ratings 3, 4, 5 → 4.00) |
 | AC-F05-04 | Survey with no responses → 200, counts 0, percent 0, average `null` |
 | AC-F05-05 | Other owner → 403; respondent → 403; anonymous → 401; none receive summary data |
 | AC-F05-06 | Summary JSON contains no respondent identifiers and no per-response answer data |
 | AC-F05-07 | After a new response is submitted, the summary count increases by one and reflects its answers (persistence journey) |
-| AC-F05-08 | UI: summary page shows counts/percent/average; empty, loading and error states present |
+| AC-F05-08 | UI: summary page shows response count, option counts/percent and rating distribution/average under stable testids (`summary-response-count`, `option-count-{optionId}`, `option-percent-{optionId}`, `rating-count-{questionId}-{level}`, `rating-average-{questionId}`); empty, loading and error states present |
+| AC-F05-09 | Largest-remainder rounding is distribution-safe: option percentages of any response distribution sum to exactly 100.0 (verified on a 300-vote fixture where naive rounding sums to 99.7) |
+| AC-F05-10 | UI: summary shows an "Updated at" timestamp (`summary-updated-at`) and a Refresh control (`summary-refresh`); activating Refresh re-fetches and re-renders the aggregates. Retry is offered for network failure and HTTP 5xx, retry reloads without leaving the page (URL unchanged); 403 and 404 show "not allowed / not found" with no Retry |
+| AC-F05-11 | Summary response includes `generatedAt` (ISO-8601) and is sent with `Cache-Control: no-store` |
+| AC-F05-12 | UI: a failed summary fetch renders an error state (`summary-error`) with a Retry control (`summary-retry`); Retry re-issues the request and renders the data on success. Long option labels (up to 200 characters, with or without spaces) wrap inside their row, show their full text, and cause no horizontal page overflow at 375 px and at 1280 px |
+| AC-F05-13 | UI: below a 600 px viewport the summary stacks in a single column — each option's count and percent stacked under its label — with no horizontal scrolling, and rating questions render all levels 1–5 with labels |
+| AC-F05-14 | The UI displays response count, per-option count and per-option percent in separate elements, with exact values, for varied response counts (0, 1, 3 and 7 responses); the displayed percents of a question sum to 100.0 when responseCount > 0 |
 
 ### Definition of Done (feature)
 Product DoD plus: aggregation function covered by unit tests with the fixture above; TC-F05-06 and 07 written failing first; PR reviewed by B with a specific check (e.g. "recomputed percentages by hand for the fixture").
@@ -350,3 +483,5 @@ Product DoD plus: aggregation function covered by unit tests with the fixture ab
 | Version | Date | Change | Reason |
 |---|---|---|---|
 | v0.1 | 2026-11-10 | Initial contract | – |
+| v0.2 | 2026-11-14 | F-05 revised: largest-remainder percent rule (AC-02, new AC-09), freshness `generatedAt` + `no-store` (new AC-11), Refresh/Updated-at and error/Retry UI (new AC-10, 12), stable testids + responsive layout (AC-08, new AC-13) | #6 change request |
+| v0.3 | 2026-11-14 | F-05 revised: AC-F05-14 added (exact values for 0/1/3/7 responses), AC-F05-10 extended (retry variants, no Retry on 403/404), AC-F05-12 extended (200-character option labels, no overflow at 375/1280 px) | Change request 2 from teammate review: stronger E2E value checks for varied response counts, retry variants, long option labels |
