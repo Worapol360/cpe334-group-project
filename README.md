@@ -18,6 +18,8 @@ NOT in Sprint 1:
 - Closing surveys, eligibility lists, CSV export — these are later sprints
 - A `closed` survey exists only from seed data (`S-CLOSED`); there is no close action in the UI or API
 
+UAT is run locally; cloud deployment is not required for this release.
+
 ## Prerequisites
 
 - **Node.js 24** (the Dockerfiles use `node:24-alpine`; there is no `engines` field or `.nvmrc` in this repo)
@@ -32,7 +34,7 @@ Run these from the repository root, one step at a time. Leave steps 12 and 13 ru
 
 1. `git clone https://github.com/Worapol360/cpe334-group-project.git`
 2. `cd cpe334-group-project`
-3. `git checkout <TAG>`
+3. `git checkout v0.1.1-sprint1-uat`
 4. `npm install --prefix server`
 5. `npm install --prefix client`
 6. `Copy-Item server\.env.example server\.env`
@@ -70,7 +72,7 @@ All application variables live in `server/.env` (copy of `server/.env.example`).
 | `DATABASE_URL_TEST` | Test database connection string (must differ from `DATABASE_URL`) | `postgresql://feedbackloop:change-me@localhost:5433/feedbackloop_test` |
 | `SEED_PASSWORD` | Password assigned to all four seeded accounts | `<CHOOSE-A-PASSWORD>` |
 
-`client/.env` is **not** needed for local UAT: the Vite dev server proxies `/api` to `http://localhost:8081` (`client/vite.config.js`). `client/.env.example` defines `VITE_API_URL`, but the current client code never reads it — API calls use relative `/api` paths (only the Docker builds pass that variable).
+`client/.env` is **not** needed for local UAT: the Vite dev server proxies `/api` to `http://localhost:8081` (`client/vite.config.js`) and the client uses relative `/api` paths, so `VITE_API_URL` (defined in `client/.env.example`) is never read.
 
 Notes:
 
