@@ -178,7 +178,7 @@ Note: rating values 0, 6 and 3.5 cannot be typed through the UI. They are covere
 | 1 | Log in as owner1. Open `Quarterly Team Feedback` (draft). | A Publish control is available. Write down its URL id as `ID-DRAFT`. Do not click Publish. |
 | 2 | Open `Past Semester Survey` (closed). | The status shows Closed and there is no Publish control. Write down its URL id as `ID-CLOSED`. |
 | 3 | Open `Course CPE334 Feedback` (published). | The status shows Published and there is no Publish control. |
-| 4 | Log out. Log in as respondent1. Open the survey list. | Only published surveys are listed. `Quarterly Team Feedback`, `Past Semester Survey`, `Owner Two Private Survey` and any draft created in UAT-03 are not listed. |
+| 4 | Log out. Log in as respondent1. Open the survey list. | Only published surveys are listed. `UAT Survey A` (created and published in UAT-01) appears next to `Course CPE334 Feedback`. `Quarterly Team Feedback`, `Past Semester Survey`, `Owner Two Private Survey` and any draft created in UAT-03 are not listed. |
 | 5 | In the address bar open `http://localhost:5173/surveys/<ID-DRAFT>`. | A "not found" or "not available" page is shown. No survey title or questions are disclosed. |
 | 6 | In the address bar open `http://localhost:5173/surveys/<ID-CLOSED>`. | The same "not found" or "not available" result. No survey data and no answer form. |
 

@@ -6,10 +6,12 @@ Read this file together with `uat-cases.md` (same folder). Nothing else needs to
 
 ## 1. Teams and contacts
 
-| Role | Team | Students |
+| Team | Role in Lab 6 | Member |
 |---|---|---|
-| Product Team (author of this handoff) | FeedbackLoop | Worapol Saeku (`Worapol360`), `aranedlek` |
-| UAT Team (executes the cases) | `TD_QMS (Khwanklao & TeekhathatTT)` | |
+| FeedbackLoop | Product Team | Worapol Saeku (GitHub `Worapol360`) |
+| FeedbackLoop | Product Team | `aranedlek` (GitHub) |
+| `TD_QMS (Khwanklao & TeekhathatTT)` | UAT Team | Khwanklao |
+| `TD_QMS (Khwanklao & TeekhathatTT)` | UAT Team | TeekhathatTT |
 
 | Item | Value |
 |---|---|
@@ -106,6 +108,8 @@ Run this before the first case and any time the case sequence has to start again
 
 Stop the API and client dev servers (Ctrl+C), then run the reset procedure from README "Reset to a clean state":
 
+> **Warning:** The reset below uses `docker compose ... down -v`, which deletes the database volume, so ALL data in the local FeedbackLoop development database is permanently lost. Run it only in the cloned project folder, never against a database whose data you need. The seed recreates only the 4 users and 4 surveys of section 5.3.
+
 ```powershell
 docker compose --env-file server/.env down -v
 docker compose --env-file server/.env up -d db
@@ -129,7 +133,7 @@ No responses exist after reset.
 
 ### 5.4 Cleanup after UAT
 
-Stop the API and web app (Ctrl+C), then `docker compose --env-file server/.env down` (add `-v` only if you also want to delete the database volume). Delete your local `server/.env`. The UAT Team keeps its screenshots and notes, not the Product Team's secrets.
+Stop the API and web app (Ctrl+C), then `docker compose --env-file server/.env down` (`-v` permanently deletes the database volume and all data in it; see the warning in section 5.3 before adding it). Delete your local `server/.env`. The UAT Team keeps its screenshots and notes, not the Product Team's secrets.
 
 ### 5.5 Special step in UAT-06
 
