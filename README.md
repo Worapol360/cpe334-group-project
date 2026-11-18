@@ -24,10 +24,11 @@ NOT in Sprint 1:
 - **npm** (ships with Node.js)
 - **Docker Desktop** — the database is PostgreSQL 16 (`postgres:16-alpine` in `docker-compose.yml`)
 - **Git**
+- If another FeedbackLoop clone or container already uses host port **5433**, run `docker compose --env-file server/.env down` in that folder first.
 
 ## Quick start (PowerShell)
 
-Run these from the repository root, one step at a time. Leave steps 11 and 12 running in their own terminals.
+Run these from the repository root, one step at a time. Leave steps 12 and 13 running in their own terminals.
 
 1. `git clone https://github.com/Worapol360/cpe334-group-project.git`
 2. `cd cpe334-group-project`
@@ -37,11 +38,12 @@ Run these from the repository root, one step at a time. Leave steps 11 and 12 ru
 6. `Copy-Item server\.env.example server\.env`
 7. Edit `server\.env`: choose your own `SEED_PASSWORD` (any password you pick) and set `PORT=8081`
 8. `docker compose --env-file server/.env up -d db` — wait until `docker compose --env-file server/.env ps` shows the db as **healthy** (the compose file defines a `pg_isready` healthcheck) before continuing
-9. `npm run db:migrate --prefix server`
-10. `npm run db:seed --prefix server`
-11. `npm run dev --prefix server` (API, listens on port 8081)
-12. `npm run dev --prefix client` (web app, Vite dev server on port 5173)
-13. Open **<http://localhost:5173>** — sign in with one of the seeded accounts below
+9. `cd server; npx prisma generate; cd ..` — generate the Prisma client (there is no package script for this). Run this before starting the API. If the API is already running, stop it with Ctrl+C first (Windows locks the Prisma engine file while it runs).
+10. `npm run db:migrate --prefix server`
+11. `npm run db:seed --prefix server`
+12. `npm run dev --prefix server` (API, listens on port 8081)
+13. `npm run dev --prefix client` (web app, Vite dev server on port 5173)
+14. Open **<http://localhost:5173>** — sign in with one of the seeded accounts below
 
 Optional checks:
 
@@ -108,16 +110,19 @@ Each seeded survey has the same two questions:
 
 **Re-running the seed does NOT delete responses or surveys created during testing.** The seed only upserts the four demo users and the four demo surveys; anything you created (and all submitted responses) stays in the database.
 
-To get back to a clean state, wipe the database volume and re-run migrate + seed. This is **destructive**: it deletes all local data (accounts, surveys and responses created during testing).
+To get back to a clean state, wipe the database volume and re-run migrate, generate, and seed. This is **destructive**: it deletes all local data (accounts, surveys and responses created during testing).
+
+Stop the API and client dev servers (Ctrl+C) before running the reset commands below, because `prisma generate` fails with EPERM while the API is running.
 
 ```powershell
 docker compose --env-file server/.env down -v
 docker compose --env-file server/.env up -d db
 npm run db:migrate --prefix server
+cd server; npx prisma generate; cd ..
 npm run db:seed --prefix server
 ```
 
-`down -v` stops the `db` container and removes its `postgres_data` volume, so the next `up -d db` starts an empty database (the init script also recreates the `*_test` database on first start). Wait for the db to report **healthy** (`docker compose --env-file server/.env ps`) before migrate and seed.
+`down -v` stops the `db` container and removes its `postgres_data` volume, so the next `up -d db` starts an empty database (the init script also recreates the `*_test` database on first start). Wait for the db to report **healthy** (`docker compose --env-file server/.env ps`) before migrate, generate, and seed.
 
 ## Run the tests
 
@@ -141,6 +146,11 @@ From the repository root (install E2E dependencies first with `npm install --pre
 3. **`prisma migrate deploy` cannot connect** — the `db` container is not up yet or `DATABASE_URL` uses the wrong port; check `docker compose --env-file server/.env ps` and confirm `DATABASE_URL` says `localhost:5433`.
 4. **Login fails for all seeded accounts** — `SEED_PASSWORD` was changed *after* seeding; accounts keep the password from the last seed. Run the wipe procedure above (or at least re-seed) with the new value.
 5. **E2E fails immediately** — a dev server already occupies 8081/5173 (the suite refuses to reuse them), or Chrome (`channel: 'chrome'`) is not installed.
+6. **`'prisma' is not recognized`** — dependencies are not installed; delete `server\node_modules` and rerun `npm install --prefix server`.
+7. **`@prisma/client did not initialize yet`** — run the Prisma generate step (quick start step 9), then rerun seed.
+8. **`EPERM: operation not permitted, rename ...query_engine-windows.dll.node`** during `prisma generate` — on Windows the Prisma query engine file (`.dll.node`) is locked while the API server (`npm run dev --prefix server`) or any other Node process using `@prisma/client` is running. Fix: stop the server in its terminal with Ctrl+C (also close other terminals running the API, E2E, or tests), then rerun `npx --prefix server prisma generate --schema server\prisma\schema.prisma`, then start the server again. If the file is still locked, close remaining `node` processes (Task Manager) and retry.
+9. **`The table public.users does not exist`** (or migrate says "No pending migrations" on a fresh clone) — the database is not empty or is stale; run the full Reset procedure (down -v, up -d db, migrate, generate, seed).
+10. **`npm install` takes ~2 minutes on first run** — this is normal.
 
 ## Known Sprint 1 limitations
 
