@@ -36,7 +36,7 @@ Run these from the repository root, one step at a time. Leave steps 11 and 12 ru
 5. `npm install --prefix client`
 6. `Copy-Item server\.env.example server\.env`
 7. Edit `server\.env`: choose your own `SEED_PASSWORD` (any password you pick) and set `PORT=8081`
-8. `docker compose --env-file server/.env up -d db`
+8. `docker compose --env-file server/.env up -d db` — wait until `docker compose --env-file server/.env ps` shows the db as **healthy** (the compose file defines a `pg_isready` healthcheck) before continuing
 9. `npm run db:migrate --prefix server`
 10. `npm run db:seed --prefix server`
 11. `npm run dev --prefix server` (API, listens on port 8081)
@@ -68,7 +68,7 @@ All application variables live in `server/.env` (copy of `server/.env.example`).
 | `DATABASE_URL_TEST` | Test database connection string (must differ from `DATABASE_URL`) | `postgresql://feedbackloop:change-me@localhost:5433/feedbackloop_test` |
 | `SEED_PASSWORD` | Password assigned to all four seeded accounts | `<CHOOSE-A-PASSWORD>` |
 
-`client/.env` is **not** needed for local UAT: the Vite dev server proxies `/api` to `http://localhost:8081` (`client/vite.config.js`). `client/.env.example` defines `VITE_API_URL` for production builds.
+`client/.env` is **not** needed for local UAT: the Vite dev server proxies `/api` to `http://localhost:8081` (`client/vite.config.js`). `client/.env.example` defines `VITE_API_URL`, but the current client code never reads it — API calls use relative `/api` paths (only the Docker builds pass that variable).
 
 Notes:
 
@@ -117,7 +117,7 @@ npm run db:migrate --prefix server
 npm run db:seed --prefix server
 ```
 
-`down -v` stops the `db` container and removes its `postgres_data` volume, so the next `up -d db` starts an empty database (the init script also recreates the `*_test` database on first start).
+`down -v` stops the `db` container and removes its `postgres_data` volume, so the next `up -d db` starts an empty database (the init script also recreates the `*_test` database on first start). Wait for the db to report **healthy** (`docker compose --env-file server/.env ps`) before migrate and seed.
 
 ## Run the tests
 
@@ -130,8 +130,8 @@ From the repository root (install E2E dependencies first with `npm install --pre
 | E2E (Playwright) | `npm run test:e2e` |
 | All of the above | `npm test` |
 
-- The tests read `DATABASE_URL_TEST` from `server/.env`. It must point at the dedicated `<POSTGRES_DB>_test` database (created automatically by `db/init/01-create-test-db.sh` the first time the `db` container starts).
-- Tests **refuse to run** if `DATABASE_URL_TEST` is missing or is equal to `DATABASE_URL` (`server/tests/harness/db.js`, `e2e/playwright.config.js`). The harness migrates and seeds the test database itself — no manual migrate/seed step is needed for tests.
+- The **API/integration and E2E** suites read `DATABASE_URL_TEST` from `server/.env`. It must point at the dedicated `<POSTGRES_DB>_test` database (created automatically by `db/init/01-create-test-db.sh` the first time the `db` container starts). The **unit** suite is pure domain code and needs no database.
+- Those two suites **refuse to run** if `DATABASE_URL_TEST` is missing or is equal to `DATABASE_URL` (`server/tests/harness/db.js`, `e2e/playwright.config.js`). The harness migrates and seeds the test database itself — no manual migrate/seed step is needed for tests.
 - The E2E suite starts its own API (8081) and client (5173) and runs in the `chrome` browser channel (`e2e/playwright.config.js`); close any running dev servers first, and make sure Google Chrome is installed.
 
 ## Troubleshooting
