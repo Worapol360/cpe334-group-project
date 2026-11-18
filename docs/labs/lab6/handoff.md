@@ -2,20 +2,20 @@
 
 Read this file together with `uat-cases.md` (same folder). Nothing else needs to be explained verbally: the cases give the steps and expected results, this file gives the version, accounts, setup, reset and reporting rules.
 
-> Items written as `<<VERIFY: ...>>` are resolved from the repository before this file is final (see the commit that adds this file). No such marker may remain in the released version.
+> Items written as VERIFY markers were resolved from the repository before this file was final (see the commit that adds this file). No such marker may remain in the released version.
 
 ## 1. Teams and contacts
 
 | Role | Team | Students |
 |---|---|---|
 | Product Team (author of this handoff) | FeedbackLoop | Worapol Saeku (`Worapol360`), `aranedlek` |
-| UAT Team (executes the cases) | `<<UAT team name / students, filled when the partner is confirmed>>` | |
+| UAT Team (executes the cases) | `TD_QMS (Khwanklao & TeekhathatTT)` | |
 
 | Item | Value |
 |---|---|
-| Agreed contact channel | `<<channel, e.g. LINE group / email>>` |
-| Agreed UAT session | `<<date and time>>` |
-| Agreed defect-correction / re-test session | `<<date and time>>` |
+| Agreed contact channel | `Discord & Line (CPE334 UAT coordination channel / group chat)` |
+| Agreed UAT session | `TBD (scheduled via Discord/Line after v0.1.1-sprint1-uat tag is published)` |
+| Agreed defect-correction / re-test session | `TBD (scheduled via Discord/Line after v0.1.1-sprint1-uat tag is published)` |
 
 ## 2. Release under test
 
@@ -23,7 +23,7 @@ Read this file together with `uat-cases.md` (same folder). Nothing else needs to
 |---|---|
 | Repository | https://github.com/Worapol360/cpe334-group-project (public) |
 | Release tag | `v0.1.1-sprint1-uat` |
-| Tag commit | `<<VERIFY: output of git rev-parse v0.1.1-sprint1-uat^{commit}>>` |
+| Tag commit | Will be posted in Discord/Line immediately after v0.1.1-sprint1-uat is tagged on main (verify via git rev-parse v0.1.1-sprint1-uat^{commit}) |
 | Sprint 1 baseline release | `main` @ `cd3374869785089ed90546b00212d65ada054dfb` (release PR #15, content = `sprint1-staging` @ `0bc008c`) |
 | Difference between baseline and tag | Documentation only: `README.md` was rewritten as the app-specific local-UAT guide and the original Lab 5 starter README was moved to `docs/labs/lab5-starter-kit-notes.md`; no application code or test changes. |
 | Run mode | Local, as permitted by the TA (Lab 5 deployment was postponed). No deployed URL |
@@ -205,4 +205,4 @@ A request for behaviour that is not in the Sprint 1 contract is an enhancement, 
 
 These are known and are not reported as defects: no login rate limiting; no CSRF token (cookie uses `SameSite=Lax`); no pagination; owners see aggregates only, never raw responses; `closed` surveys exist only from seed data; rating values 0, 6 and 3.5 and concurrency, rollback and session-expiry rules are verified by automated tests, not by this manual UAT.
 
-Automated test evidence for the baseline (reported on tested commit `34c51d6`): 18 unit, 79 API and integration, 23 E2E, all passing, plus 2 manual tests. The Product Team re-runs `npm test` on the tagged commit before the UAT session and gives the result to the UAT Team: `<<result, date, commit>>`.
+Automated test evidence for the baseline (reported on tested commit `34c51d6`): 18 unit, 79 API and integration, 23 E2E, all passing, plus 2 manual tests. The Product Team re-runs `npm test` on the tagged commit before the UAT session and gives the result to the UAT Team: all suites passed on 2026-11-18 at commit `f99562432dacccc5857829a0e0beef5941da5fe1` — 18 unit, 79 API/integration and 23 E2E tests (120 total).

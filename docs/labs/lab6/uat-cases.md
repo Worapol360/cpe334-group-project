@@ -156,7 +156,7 @@ If a dependency case FAILED or was BLOCKED, record the dependent case as BLOCKED
 | 7 | Open the owner list. | It contains the surveys from steps 4 and 5 and does not contain any survey from steps 1, 2, 3 and 6. |
 | 8 | Log out. Log in as respondent2. Open `Course CPE334 Feedback`. Answer Q1 only and leave Q2 empty. Submit. | An error is shown for the unanswered question. No confirmation page appears. |
 | 9 | Open the survey list. | `Course CPE334 Feedback` is not marked as answered for respondent2. |
-| 10 | Log out. Log in as owner1. Open the summary of `Course CPE334 Feedback`. | The response count has not increased because of step 8 (it is 1 if UAT-02 ran, otherwise 0 with "no responses yet"). |
+| 10 | Log out. Log in as owner1. Open the summary of `Course CPE334 Feedback`. | The response count has not increased because of step 8 (it is 1 if UAT-02 ran, otherwise 0 with "No responses yet"). |
 
 Note: rating values 0, 6 and 3.5 cannot be typed through the UI. They are covered by automated tests (AC-F04-07) and are not part of this manual UAT.
 
@@ -203,12 +203,12 @@ Note: submitting to a closed survey through the API (409 `SURVEY_NOT_OPEN`) cann
 | 2 | Log in as respondent1. Open `http://localhost:5173/owner/surveys` and `http://localhost:5173/owner/surveys/new`. | A "not allowed" page is shown for each. No owner data and no create form. |
 | 3 | As respondent1 open `http://localhost:5173/owner/surveys/<ID-UATA>/summary`. | A "not allowed" page. No counts or percentages are shown. |
 | 4 | Log out. Log in as owner2. Open the owner survey list. | Only `Owner Two Private Survey` (and surveys owner2 created) is listed. No survey of owner1 appears. |
-| 5 | As owner2 open `http://localhost:5173/owner/surveys/<ID-UATA>`. | A "not allowed" page. The title and questions of `UAT Survey A` are not displayed and no Publish control is reachable. |
-| 6 | As owner2 open `http://localhost:5173/owner/surveys/<ID-UATA>/summary`. | A "not allowed" page. No aggregates are shown. |
+| 5 | As owner2 open `http://localhost:5173/owner/surveys/<ID-UATA>`. | An error banner saying "You do not have permission to access this survey". The title and questions of `UAT Survey A` are not displayed and no Publish control is reachable. |
+| 6 | As owner2 open `http://localhost:5173/owner/surveys/<ID-UATA>/summary`. | An error banner saying "You are not allowed to view this summary". No aggregates are shown. |
 | 7 | As owner2 open `http://localhost:5173/surveys`. | A "not allowed" page (owners cannot use the respondent area). |
-| 8 | Log out. Log in as respondent2. Open `http://localhost:5173/responses/<ID-R1PUB>`. | A "not allowed" page. None of respondent1's answers are shown. |
+| 8 | Log out. Log in as respondent2. Open `http://localhost:5173/responses/<ID-R1PUB>`. | An error banner saying "You do not have permission to view this response". None of respondent1's answers are shown. |
 | 9 | As respondent2, in the same browser, open `http://localhost:8081/api/responses/<ID-R1PUB>` in a new tab. | The API answers with a JSON error whose code is `FORBIDDEN` (HTTP 403) and no answer data. If you see `UNAUTHENTICATED` instead, confirm you are still logged in as respondent2 in this browser profile, retry once, and record exactly what you saw. |
-| 10 | Log out. Log in as owner1. Open `http://localhost:5173/responses/<ID-R1PUB>`. | A "not allowed" page (owners cannot read raw responses). |
+| 10 | Log out. Log in as owner1. Open `http://localhost:5173/responses/<ID-R1PUB>`. | An error banner saying "You do not have permission to view this response" (owners cannot read raw responses). |
 | 11 | As owner1 open the summary of `Course CPE334 Feedback` and the status of `UAT Survey A`. | Protected state is unchanged: `Course CPE334 Feedback` still shows response count 1 with the UAT-02 values, and `UAT Survey A` is still Published with response count 1. |
 
 ---
