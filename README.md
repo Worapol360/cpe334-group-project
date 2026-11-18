@@ -1,76 +1,155 @@
-# CPE 334 Lab 5 Starter Files
+# FeedbackLoop
 
-These files take TokTickIT from a laptop to Google Cloud Run with a CI/CD pipeline. They are the worked example for Lab 5. Your team's project uses a different app and maybe a different stack, so copy the files into your repository and adapt them. The Lab 5 handout explains the rules each file must follow.
+FeedbackLoop is the CPE 334 Theme 10 class project: a department course-feedback survey tool with two roles, **Survey Owner** (creates and publishes surveys, views aggregate summaries) and **Respondent** (browses published surveys and submits responses). Sprint 1 runs in **identified mode only** — every response is linked to its respondent (BR-09). Repository: <https://github.com/Worapol360/cpe334-group-project>
 
-The application code (`client/`, `server/src/`, `server/prisma/`) is not included. Every file here assumes a Node.js 24 frontend and API in one container with PostgreSQL and Prisma. Lines that depend on that are listed under "What to change".
+## Sprint 1 scope
 
-## What is in this folder
+Implemented in this release:
 
-| File | What it does |
+- Login / logout with a session cookie (F-01)
+- Create a draft survey with questions (F-02)
+- Publish a draft survey (F-03)
+- Submit one response per respondent per survey, with duplicate prevention (F-04)
+- Owner aggregate summary for a published survey (F-05)
+
+NOT in Sprint 1:
+
+- Anonymous response mode (identified mode only)
+- Closing surveys, eligibility lists, CSV export — these are later sprints
+- A `closed` survey exists only from seed data (`S-CLOSED`); there is no close action in the UI or API
+
+## Prerequisites
+
+- **Node.js 24** (the Dockerfiles use `node:24-alpine`; there is no `engines` field or `.nvmrc` in this repo)
+- **npm** (ships with Node.js)
+- **Docker Desktop** — the database is PostgreSQL 16 (`postgres:16-alpine` in `docker-compose.yml`)
+- **Git**
+
+## Quick start (PowerShell)
+
+Run these from the repository root, one step at a time. Leave steps 11 and 12 running in their own terminals.
+
+1. `git clone https://github.com/Worapol360/cpe334-group-project.git`
+2. `cd cpe334-group-project`
+3. `git checkout <TAG>`
+4. `npm install --prefix server`
+5. `npm install --prefix client`
+6. `Copy-Item server\.env.example server\.env`
+7. Edit `server\.env`: choose your own `SEED_PASSWORD` (any password you pick) and set `PORT=8081`
+8. `docker compose --env-file server/.env up -d db`
+9. `npm run db:migrate --prefix server`
+10. `npm run db:seed --prefix server`
+11. `npm run dev --prefix server` (API, listens on port 8081)
+12. `npm run dev --prefix client` (web app, Vite dev server on port 5173)
+13. Open **<http://localhost:5173>** — sign in with one of the seeded accounts below
+
+Optional checks:
+
+- API health: <http://localhost:8081/api/health>
+- For the test suites only, also run: `npm install --prefix e2e`
+
+## Environment variables
+
+All application variables live in `server/.env` (copy of `server/.env.example`). Never commit `.env`.
+
+| Name | Purpose | Example placeholder |
+|---|---|---|
+| `APP_ENV` | Runtime environment label | `development` |
+| `PORT` | API listen port | `8081` |
+| `LOG_LEVEL` | Log verbosity | `info` |
+| `APP_VERSION` | Version reported by `/api/health` | `dev` |
+| `CORS_ALLOWED_ORIGINS` | Allowed browser origins | `http://localhost:5173` |
+| `SESSION_TTL_MINUTES` | Session lifetime in minutes | `60` |
+| `COOKIE_SECURE` | `Secure` cookie flag (keep `false` for local HTTP) | `false` |
+| `POSTGRES_USER` | Database user created by Docker Compose | `feedbackloop` |
+| `POSTGRES_PASSWORD` | Database password (placeholder only) | `change-me` |
+| `POSTGRES_DB` | Database name | `feedbackloop` |
+| `DATABASE_URL` | Application database connection string | `postgresql://feedbackloop:change-me@localhost:5433/feedbackloop` |
+| `DATABASE_URL_TEST` | Test database connection string (must differ from `DATABASE_URL`) | `postgresql://feedbackloop:change-me@localhost:5433/feedbackloop_test` |
+| `SEED_PASSWORD` | Password assigned to all four seeded accounts | `<CHOOSE-A-PASSWORD>` |
+
+`client/.env` is **not** needed for local UAT: the Vite dev server proxies `/api` to `http://localhost:8081` (`client/vite.config.js`). `client/.env.example` defines `VITE_API_URL` for production builds.
+
+Notes:
+
+- **`SEED_PASSWORD` must be chosen by the person running the app.** It is hashed at seed time and becomes the login password for **all four** seeded accounts. Changing it later in `.env` does not change existing accounts (see Troubleshooting).
+- **Host DB port 5433.** `docker-compose.yml` maps `5433:5432` so it does not clash with a local PostgreSQL on 5432; `DATABASE_URL` and `DATABASE_URL_TEST` must use `localhost:5433`. If 5433 is already taken, change the host side of `ports` in `docker-compose.yml` **and** the port in both URL variables.
+- **API `PORT=8081`** is the value this team uses: set it in `server\.env` (the `.env.example` file ships `8080`, and the code default is `8080`). The Vite proxy (`client/vite.config.js`) and the E2E config (`e2e/playwright.config.js`) both expect **8081**. If 8081 is taken, change `PORT` in `server\.env` and the proxy target in `client/vite.config.js` together.
+
+## Seeded accounts
+
+All four accounts share the password you set as `SEED_PASSWORD`.
+
+| Email | Label | Role |
+|---|---|---|
+| `owner1@example.test` | Owner One | owner |
+| `owner2@example.test` | Owner Two | owner |
+| `respondent1@example.test` | Respondent One | respondent |
+| `respondent2@example.test` | Respondent Two | respondent |
+
+## Seeded surveys
+
+| Key | Title | Status | Owner |
+|---|---|---|---|
+| `S-DRAFT` | Quarterly Team Feedback | draft | `owner1@example.test` |
+| `S-PUB` | Course CPE334 Feedback | published | `owner1@example.test` |
+| `S-CLOSED` | Past Semester Survey | closed | `owner1@example.test` |
+| `S-OWNER2-DRAFT` | Owner Two Private Survey | draft | `owner2@example.test` |
+
+Each seeded survey has the same two questions:
+
+1. **Which aspect did you find most valuable?** (single choice)
+   - Lectures and Materials
+   - Hands-on Labs
+   - Team Collaboration
+2. **How satisfied are you with the course pace? (1=Lowest, 5=Highest)** (rating, no options)
+
+## Reset to a clean state
+
+**Re-running the seed does NOT delete responses or surveys created during testing.** The seed only upserts the four demo users and the four demo surveys; anything you created (and all submitted responses) stays in the database.
+
+To get back to a clean state, wipe the database volume and re-run migrate + seed. This is **destructive**: it deletes all local data (accounts, surveys and responses created during testing).
+
+```powershell
+docker compose --env-file server/.env down -v
+docker compose --env-file server/.env up -d db
+npm run db:migrate --prefix server
+npm run db:seed --prefix server
+```
+
+`down -v` stops the `db` container and removes its `postgres_data` volume, so the next `up -d db` starts an empty database (the init script also recreates the `*_test` database on first start).
+
+## Run the tests
+
+From the repository root (install E2E dependencies first with `npm install --prefix e2e`):
+
+| Suite | Command |
 |---|---|
-| `server/Dockerfile`, `client/Dockerfile`, `client/nginx.conf` | Used by `docker-compose.yml` for local runs: one image for the API, one for the web app served by nginx. |
-| `Dockerfile`, `.dockerignore` | Three-stage build. The React app is built and served by the Express API from one container on port 3000, running as the non-root `node` user. |
-| `docker-compose.yml` | Runs PostgreSQL, a migration/seed job, the API (`localhost:3000`) and the web app (`localhost:5173`) locally. |
-| `server/.env.example`, `client/.env.example` | Every environment variable the app reads, with placeholders only. Copy to `.env` locally and never commit `.env`. |
-| `server/docker-entrypoint.sh` | Starts the server and nothing else. Migrations run in a separate Cloud Run job. |
-| `.github/workflows/ci-docker.yml` | Runs on every Pull Request: PostgreSQL service, migrate and seed, backend and frontend tests, deploy script tests, Docker build. The job name `test-and-docker` is the required check for the ruleset. |
-| `.github/workflows/deploy.yml` | Runs on every merge into `main`: CI again, build and push the image tagged with the commit SHA, migration job, Cloud Run update, smoke test. Run it by hand with `image_tag` to roll back. |
-| `deploy/deploy.sh` | One-time setup and first deploy: APIs, Artifact Registry, Cloud SQL, secrets, runtime service account, migration job, and Cloud Run service. Run with `DRY_RUN=1` first. |
-| `deploy/release.sh` | Called by `deploy.yml`. Checks the image exists, reads its digest, runs the migration job, and updates the service. |
-| `deploy/smoke_test.py` | Checks `/api/health`, `/api/ready`, `/`, and `/api/categories`, plus an optional sign-in. |
-| `deploy/teardown.sh` | Deletes the cloud resources after the course. |
-| `deploy/tests/` | Offline tests for the deploy scripts. CI runs them. |
-| `.github/dependabot.yml` | Opens a Pull Request every week when a GitHub Action used by the workflows has a newer version. |
-| `docs/gcp-first-lab.md` | Step-by-step first deploy from Cloud Shell. |
-| `docs/gcp-cicd-guide.md` | GCP setup, local run, CI, troubleshooting, and cost. |
-| `docs/auto-deploy.md` | Workload Identity Federation, GitHub environment and variables, ruleset, and rollback. |
+| Unit | `npm run test:unit` |
+| API / integration | `npm run test:api` |
+| E2E (Playwright) | `npm run test:e2e` |
+| All of the above | `npm test` |
 
-The guides are in English. The TA team wrote them during their own rehearsal. Values such as `YOUR_PROJECT_ID`, `YOUR_PROJECT_NUMBER`, and `YOUR_ORG/YOUR_REPO` are placeholders for your own. Commit SHAs and revision names in the guides are examples from the rehearsal.
+- The tests read `DATABASE_URL_TEST` from `server/.env`. It must point at the dedicated `<POSTGRES_DB>_test` database (created automatically by `db/init/01-create-test-db.sh` the first time the `db` container starts).
+- Tests **refuse to run** if `DATABASE_URL_TEST` is missing or is equal to `DATABASE_URL` (`server/tests/harness/db.js`, `e2e/playwright.config.js`). The harness migrates and seeds the test database itself — no manual migrate/seed step is needed for tests.
+- The E2E suite starts its own API (8081) and client (5173) and runs in the `chrome` browser channel (`e2e/playwright.config.js`); close any running dev servers first, and make sure Google Chrome is installed.
 
-## Local database (this project)
+## Troubleshooting
 
-PostgreSQL 16 runs via `docker compose --env-file server/.env up -d db`. The `db` service publishes **host port 5433** (`5433:5432`) because a local PostgreSQL Windows service may already own 5432, so `DATABASE_URL` and `DATABASE_URL_TEST` in `server/.env` must use `localhost:5433`. On first start, `db/init/01-create-test-db.sh` creates the separate `<POSTGRES_DB>_test` database used only by tests.
+1. **`docker compose` fails with a daemon error** — Docker Desktop is not running. Start it and retry step 8.
+2. **Port already in use (5433 or 8081)** — 5433: change the host side of `ports` in `docker-compose.yml` plus both URL variables in `server\.env`. 8081: change `PORT` in `server\.env` and the proxy target in `client/vite.config.js`.
+3. **`prisma migrate deploy` cannot connect** — the `db` container is not up yet or `DATABASE_URL` uses the wrong port; check `docker compose --env-file server/.env ps` and confirm `DATABASE_URL` says `localhost:5433`.
+4. **Login fails for all seeded accounts** — `SEED_PASSWORD` was changed *after* seeding; accounts keep the password from the last seed. Run the wipe procedure above (or at least re-seed) with the new value.
+5. **E2E fails immediately** — a dev server already occupies 8081/5173 (the suite refuses to reuse them), or Chrome (`channel: 'chrome'`) is not installed.
 
-The API listens on `PORT` (default `8080`); on this machine port 8080 is already taken by other tooling, so local runs and the E2E suite use `PORT=8081`, and the Vite dev proxy targets `http://localhost:8081`.
+## Known Sprint 1 limitations
 
-## Order of work
+- No login rate limiting
+- No CSRF token (SameSite=Lax cookie + JSON-only state-changing endpoints)
+- No pagination
+- Owners see aggregates only — raw responses are not exposed
 
-0. Follow the Lab 5 Student Guide (the episode series from the TA team). This folder is the material it points to.
-1. Run your app locally in production mode, then with `docker compose up --build`.
-2. Make it cloud-ready: sessions and uploaded files in the database, no demo passwords in production, reference data and the first administrator created by the seed.
-3. Add `ci-docker.yml` and open a Pull Request to see the checks run.
-4. Confirm billing is open and create a budget alert. In Cloud Shell, run `DRY_RUN=1 PROJECT_ID=YOUR_PROJECT_ID bash deploy/deploy.sh`, read the output, then run it without `DRY_RUN`. The TA guides add `--demo`, which loads sample users with a generated password for teaching. Demo accounts are allowed in your project (you will need them for UAT in Lab 6), but their passwords must come from Secret Manager or environment variables, never from code, and must not be shown on screen.
-5. Follow `docs/auto-deploy.md` to create the deploy service account, Workload Identity Federation, the GitHub environment `demo`, and the ruleset for `main`.
-6. Add `deploy.yml` and merge a small change into `main`.
+## More documentation
 
-## GitHub settings that deploy.yml expects
-
-Environment `demo`, deployable only from `main`, with these variables:
-
-| Name | Example |
-|---|---|
-| `GCP_PROJECT_ID` | `YOUR_PROJECT_ID` |
-| `GCP_REGION` | `asia-southeast1` |
-| `WIF_PROVIDER` | `projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-actions/providers/github-main` |
-| `WIF_SERVICE_ACCOUNT` | `toktickit-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com` |
-
-Optional: `SMOKE_EMAIL` as a variable and `SMOKE_PASSWORD` as a secret, for the sign-in check. Set both or neither.
-
-Ruleset for `main`: Enforcement Active, empty bypass list, Require a pull request, Require status checks to pass with `test-and-docker` selected through Add checks, and Require branches to be up to date.
-
-## What to change for your project
-
-- Names: the service `toktickit`, the job `toktickit-migrate`, the Artifact Registry repository, and the Cloud SQL instance and database appear in `deploy/deploy.sh`, `deploy/release.sh`, and `deploy.yml`. Rename them consistently.
-- `Dockerfile`: the build commands, the paths copied into the final image, and the port. The final image must contain every file the server and the seed need at run time.
-- `ci-docker.yml`: the install, migrate, seed, test, and build commands for your stack.
-- `deploy/deploy.sh` and `release.sh`: the migration job command (`prisma migrate deploy` and the seed) and the secrets your app reads.
-- `deploy/smoke_test.py`: the endpoints and the expected text. Keep it read-only and do not use the administrator account.
-- Leave alone unless you know why: Workload Identity Federation instead of JSON keys, actions pinned to full commit SHAs, the image tag being the full commit SHA, deploying by image digest, and the `if` conditions on the `test` and `deploy` jobs that make rollback work.
-
-## Rollback
-
-Actions > Deploy demo > Run workflow on `main`, then enter the full 40-character commit SHA of the last release that worked. The workflow skips tests, build, and migration, deploys that image, and runs the smoke test. The database schema is not rolled back, so keep migrations additive.
-
-## Cost
-
-Cloud SQL is billed for every hour it exists. The TA team estimated about USD 14 to 18 per project per month with light use in October 2026. Create the budget alert before anything else, and run `deploy/teardown.sh` when the course ends.
+- [`docs/`](docs/) — SRS (`srs.md`), feature list (`features.md`), system design (`system-sds.md`), requirements traceability (`traceability.md`), and the Sprint 1 contracts and tests under `docs/sprints/sprint-1/` (API spec, feature specs, UI spec, tests)
+- [`docs/labs/lab5-starter-kit-notes.md`](docs/labs/lab5-starter-kit-notes.md) — the original Lab 5 starter-kit README (deployment/CI material), kept for reference
