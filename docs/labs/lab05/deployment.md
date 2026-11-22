@@ -14,7 +14,7 @@ This document describes how the application is built, tested and run today, whic
 | Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
-| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); `deploy.yml` exists but the deploy pipeline is not yet wired to a real project | Done (Issue: #28); TODO — Issues: L5-06 WIF and merge gate, L5-07 deploy workflow |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); `deploy.yml` exists but the deploy pipeline is not yet wired to a real project | Done (Issue: #28); L5-06 WIF + merge gate documented (see §11); TODO — Issue: L5-07 deploy workflow |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -280,4 +280,8 @@ Deployment targets Google Cloud project `cpe-se-course-2026` in region `asia-sou
   - Latest Revision: `s3ed50763-00002-tv6`
   - Traffic: 100% LATEST
   - Public URL: `https://s3ed50763-4d7hbszvwq-as.a.run.app`
+
+## 11. Workload Identity Federation and merge gate (L5-06 / #30)
+
+Full design, command pack, verification and demo procedure: **[wif-and-merge-gate.md](wif-and-merge-gate.md)**. Summary: one least-privilege deployer service account (`s3ed50763-deployer`, no JSON key — WIF only) is assumed by GitHub Actions through one workload identity pool and one OIDC provider for `token.actions.githubusercontent.com`, whose attribute mapping/exchange is restricted by an attribute condition to this repository (`Worapol360/cpe334-group-project`, recommended additionally to `refs/heads/main`). The deploy job needs `permissions: id-token: write` (already in `deploy.yml`) and only `roles/run.developer`, `roles/artifactregistry.writer` on the repo, `roles/iam.serviceAccountUser` on the runtime SA, plus `roles/iam.workloadIdentityUser` for the repo principalSet — no owner/editor, no Secret Manager or Cloud SQL roles for the deployer. The provider resource name and deployer SA email go into GitHub environment `demo` as variables `WIF_PROVIDER` / `WIF_SERVICE_ACCOUNT` (with `GCP_PROJECT_ID`, `GCP_REGION`) — identifiers, never keys. The merge gate is a GitHub ruleset on `main` and `sprint1-staging`: pull request required, 1 approval, required status check `test-and-docker`, no force pushes, no deletion, empty bypass list; proven by the C-02 failing-test PR (closed without merging). WIF itself is only proven by the first real `deploy.yml` run (L5-07).
 
