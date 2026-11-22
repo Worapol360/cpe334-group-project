@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TASK_TMP="$(mktemp -d)"
 trap 'rm -rf "$TASK_TMP"' EXIT
-export PROJECT_ID=release-test REGION=asia-southeast1
+export PROJECT_ID=release-test REGION=asia-southeast1 PREFIX=toktickit
 export IMAGE_TAG=1111111111111111111111111111111111111111
 export CALL_LOG="$TASK_TMP/calls" GITHUB_ENV="$TASK_TMP/env"
 export PATH="$TASK_TMP:$PATH"

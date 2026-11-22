@@ -11,9 +11,9 @@ This document describes how the application is built, tested and run today, whic
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
 | Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; no registry push yet | TODO — Issue: L5-07 deploy workflow |
-| Cloud Run (service) | Express can serve API + built SPA (`APP_ENV=production`); no service deployed | TODO — Issue: L5-05 GCP first deploy |
-| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433 | TODO — Issue: L5-08 persistence |
-| Secret Manager | Not used; secrets live only in local `server/.env` (never committed) | TODO — Issue: L5-05 GCP first deploy |
+| Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
+| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
+| Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
 | GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); `deploy.yml` exists but the deploy pipeline is not yet wired to a real project | Done (Issue: #28); TODO — Issues: L5-06 WIF and merge gate, L5-07 deploy workflow |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
@@ -104,11 +104,23 @@ npm test                             # all three, in that order
 - **Cookie**: the session cookie is always `HttpOnly` and `SameSite=Lax`; its `Secure` flag follows `COOKIE_SECURE` (`false` locally, `true` on Cloud Run) — `server/src/api/middleware/session.js`.
 - **Health/version**: `GET /api/health` returns `{"status":"ok","version":"<APP_VERSION>"}` and falls back to `"dev"` when `APP_VERSION` is unset (`server/src/api/routes/health.js`, `server/src/config.js`). No other configuration or secret is exposed.
 
-## 7. TODO placeholders
+## 7. GCP Resource names and configuration (L5-05 / #29)
 
-- **GCP project**: `CHANGE_ME_PROJECT_ID` — TODO (Issue: L5-05).
-- **Region**: `CHANGE_ME_REGION` — TODO (Issue: L5-05).
-- **Resource names** (Artifact Registry repo, Cloud Run service, Cloud SQL instance, Secret Manager secrets, service account): `CHANGE_ME_*` — TODO (Issues: L5-05, L5-08).
+- **GCP project**: `cpe-se-course-2026`
+- **Region**: `asia-southeast1`
+- **Team Prefix**: `s3ed50763`
+- **Cloud Run service**: `s3ed50763`
+- **Cloud Run Public URL**: `https://s3ed50763-4d7hbszvwq-as.a.run.app`
+- **Cloud Run migration job**: `s3ed50763-migrate`
+- **Cloud SQL instance**: `s3ed50763-pg` (PostgreSQL 16, tier `db-f1-micro`, connection `cpe-se-course-2026:asia-southeast1:s3ed50763-pg`, database `s3ed50763`, user `s3ed50763`)
+- **Artifact Registry repository**: `s3ed50763` (`asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3ed50763/s3ed50763`)
+- **Service Accounts**:
+  - Runtime service account: `s3ed50763-runner@cpe-se-course-2026.iam.gserviceaccount.com`
+  - Deployer service account: `s3ed50763-deployer@cpe-se-course-2026.iam.gserviceaccount.com`
+- **Secret Manager secrets**:
+  - `s3ed50763-database-url` (Prisma `DATABASE_URL`)
+  - `s3ed50763-admin-password`
+  - `s3ed50763-demo-password`
 - **Release procedure**: TODO (Issue: L5-07) — expected shape: push to `main` → CI (`ci-docker.yml`) → `deploy.yml` builds the image tagged with the commit SHA → `deploy/release.sh` migrates and updates the Cloud Run service → `deploy/smoke_test.py` checks the public URL; manual rollback by re-running the workflow with a previous image tag.
 - **How to find the running commit**: TODO (Issue: L5-07) — the image tag is the full commit SHA; confirm via the workflow's deployment summary / Cloud Run revision metadata.
 - **Persistence evidence**: TODO (Issue: L5-08) — demonstrate data (including sessions) surviving a container restart against Cloud SQL.

@@ -93,6 +93,7 @@ chmod +x "$TEST_STATE_DIR/bin/openssl" "$TEST_STATE_DIR/bin/gcloud"
 export PATH="$TEST_STATE_DIR/bin:$PATH"
 export PROJECT_ID=stub-gcp-project
 export REGION=asia-southeast1
+export PREFIX=toktickit
 export DRY_RUN=0
 
 # --- Run every scenario and assert on what deploy.sh did ------------------------
