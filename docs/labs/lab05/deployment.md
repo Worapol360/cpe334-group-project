@@ -10,11 +10,11 @@ This document describes how the application is built, tested and run today, whic
 
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
-| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; no registry push yet | TODO — Issue: L5-04 CI |
+| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; no registry push yet | TODO — Issue: L5-07 deploy workflow |
 | Cloud Run (service) | Express can serve API + built SPA (`APP_ENV=production`); no service deployed | TODO — Issue: L5-05 GCP first deploy |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433 | TODO — Issue: L5-08 persistence |
 | Secret Manager | Not used; secrets live only in local `server/.env` (never committed) | TODO — Issue: L5-05 GCP first deploy |
-| GitHub Actions | Workflows exist (`.github/workflows/ci-docker.yml`, `deploy.yml`, `dependabot.yml`) but the pipeline is not yet wired to a real project | TODO — Issues: L5-04 CI, L5-06 WIF and merge gate, L5-07 deploy workflow |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); `deploy.yml` exists but the deploy pipeline is not yet wired to a real project | Done (Issue: #28); TODO — Issues: L5-06 WIF and merge gate, L5-07 deploy workflow |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -168,3 +168,63 @@ docker compose --env-file server/.env down
 docker compose --env-file server/.env up -d
 ```
 Verified data persistence: login with seeded `owner1@example.test` and demo surveys persist intact without re-seeding.
+
+## 9. CI on pull requests (L5-04 / #28)
+
+### 9.1 Workflow file and triggers
+
+- **File**: `.github/workflows/ci-docker.yml` (workflow name `CI`, replaced by this issue; Dependabot config in `.github/dependabot.yml`).
+- **Triggers**: `pull_request` into `sprint1-staging`, `sprint2-staging` and `main`, plus manual `workflow_dispatch`. The workflow is also callable via `workflow_call` so `deploy.yml` can run CI again before deploying (L5-07). There is deliberately **no `push` trigger** and the workflow needs **no GitHub secrets**.
+- **Permissions**: `contents: read` only. **Concurrency**: group `ci-<workflow>-<PR number>` (falls back to the ref when there is no PR number), with `cancel-in-progress` limited to `pull_request` runs so a newer push cancels an outdated PR run but never a deploy or manual run. **Timeout**: 30 minutes on the job.
+- The job creates an ephemeral `postgres:16` service container; because a service container cannot mount `db/init/`, a `psql` step creates the second database (`feedbackloop_test`) exactly like `db/init/01-create-test-db.sh` does locally.
+
+### 9.2 Job name — do not rename
+
+The workflow has exactly one job whose **id and name are both `test-and-docker`**. Issue L5-06 turns this job name into the **required status check** of the branch-protection merge gate; renaming the job (or the `name:` field) makes the check disappear and silently breaks the merge gate.
+
+### 9.3 Steps (in order)
+
+1. `actions/checkout` (SHA-pinned, `persist-credentials: false`).
+2. `actions/setup-node` with **Node 24** (matches `node:24-alpine` in the `Dockerfile`) and npm cache for the three lockfiles.
+3. Create the test database with `psql` (`CREATE DATABASE feedbackloop_test`).
+4. `npm ci` in `server/`, `client/` and `e2e/`.
+5. `npx prisma generate`, `npx prisma migrate deploy` (app database), `npm run prisma:seed`.
+6. **Unit tests** (`npm run test:unit`) and **API + integration tests** (`npm run test:api`) — the test harness itself migrates + seeds `DATABASE_URL_TEST`.
+7. **Client production build** (`npm run build` in `client/`).
+8. **Playwright browsers**: `npx playwright install --with-deps chromium` (the config launches the runner's system Chrome via `channel: "chrome"`).
+9. **E2E tests** (`npx playwright test --reporter=list,html` in `e2e/`): Playwright starts the API on `PORT=8081` (against the test database) and the Vite dev server on `5173` itself.
+10. **`docker build`** of the root `Dockerfile`, tagged with the commit SHA (`feedbackloop:<sha>`). No push, no registry login.
+11. Upload the Playwright report as an artifact **only when the job failed** (`if: failure()`).
+
+Each suite runs with `if: ${{ !cancelled() }}` so a failure in one suite still lets the others run and report; any failing step still fails the job.
+
+### 9.4 Throwaway CI-only environment values (not secrets)
+
+All values live in the workflow's top-level `env:` block, are obviously fake, and exist only for the lifetime of the job. **No repository secrets are used.**
+
+| Name | CI-only value | Points at |
+|---|---|---|
+| `POSTGRES_USER` | `ci_feedbackloop` | ephemeral service container |
+| `POSTGRES_PASSWORD` | `ci-only-fake-password` | ephemeral service container |
+| `POSTGRES_DB` | `feedbackloop` | app database |
+| `DATABASE_URL` | `postgresql://ci_feedbackloop:ci-only-fake-password@localhost:5432/feedbackloop?schema=public` | app database |
+| `DATABASE_URL_TEST` | `postgresql://ci_feedbackloop:ci-only-fake-password@localhost:5432/feedbackloop_test?schema=public` | test database (different DB — tests refuse to run otherwise) |
+| `SEED_PASSWORD` | `ci-only-fake-password` | demo-account seeding |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Vite dev server origin used by E2E |
+
+### 9.5 Where to find results
+
+- **Test summary**: on the workflow run page → job `test-and-docker` → **Step summary** (`$GITHUB_STEP_SUMMARY`). It contains one section per suite ("Unit tests (Vitest)", "API and integration tests (Vitest)", "E2E tests (Playwright)") with passed/failed counts, produced from the existing reporters via CLI flags only.
+- **Playwright artifact**: on failure only, the run's **Artifacts** section contains `playwright-report` (`e2e/playwright-report/` HTML report plus `e2e/test-results/`). Green runs upload nothing.
+
+### 9.6 Actions used and pinning
+
+| Action | Pin |
+|---|---|
+| `actions/checkout` | SHA `3d3c42e5aac5ba805825da76410c181273ba90b1` (= tag `v7.0.1`) |
+| `actions/setup-node` | SHA `949feb2413d6458794dcd2491c4babbbce0c15c1` (= tag `v7.1.0`) |
+| `actions/upload-artifact` | SHA `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` (= tag `v7.0.1`) |
+
+All three are pinned to verified full 40-character commit SHAs (verified read-only with `git ls-remote` against the action repositories) — **no unpinned actions remain**. `.github/dependabot.yml` opens weekly bump PRs for `github-actions` and for each npm package directory (`/server`, `/client`, `/e2e`), max 3 open PRs each, targeting `sprint1-staging`.
+
+Note for L5-07: `deploy.yml` calls this workflow with `uses: ./.github/workflows/ci-docker.yml`, which works again now that `workflow_call` is restored (no inputs or secrets are passed); `cancel-in-progress` is limited to `pull_request` runs, so a deploy-triggered CI run on `main` is never cancelled by concurrency.
