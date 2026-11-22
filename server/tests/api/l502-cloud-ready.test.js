@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, rmdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +22,9 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const distDir = path.join(repoRoot, 'client', 'dist');
 const indexPath = path.join(distDir, 'index.html');
 const MARKER = 'L5-02-TEST-INDEX';
+const hadDistDir = existsSync(distDir);
 const hadPreexistingIndex = existsSync(indexPath);
+const originalIndexContent = hadPreexistingIndex ? readFileSync(indexPath, 'utf8') : null;
 
 if (!hadPreexistingIndex) {
   mkdirSync(distDir, { recursive: true });
@@ -35,7 +37,18 @@ if (!hadPreexistingIndex) {
 const app = createApp();
 
 afterAll(() => {
-  if (!hadPreexistingIndex) rmSync(distDir, { recursive: true, force: true });
+  if (hadPreexistingIndex) {
+    if (originalIndexContent !== null) writeFileSync(indexPath, originalIndexContent);
+  } else {
+    rmSync(indexPath, { force: true });
+    if (!hadDistDir) {
+      try {
+        rmdirSync(distDir);
+      } catch {
+        // directory missing or not empty (other build files) — leave it alone
+      }
+    }
+  }
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
