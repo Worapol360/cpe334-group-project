@@ -10,7 +10,7 @@
 #
 # INPUT (environment variables)
 #   PROJECT_ID, REGION, IMAGE_TAG   required (IMAGE_TAG = full 40-char commit SHA)
-#   SERVICE_NAME, MIGRATE_JOB_NAME  optional (default: toktickit, toktickit-migrate)
+#   SERVICE_NAME, MIGRATE_JOB_NAME  optional (default: $PREFIX, $PREFIX-migrate)
 #   ROLLBACK                        true | false (default false)
 #   GITHUB_ENV                      when set, SERVICE_URL / DEPLOYED_IMAGE are
 #                                   appended so later workflow steps can use them
@@ -29,8 +29,7 @@
 #   - Artifact Registry images       : https://cloud.google.com/sdk/gcloud/reference/artifacts/docker/images/describe
 #
 # ⭐ CHANGE ME — groups using another tech stack must review:
-#   # CHANGE ME: default SERVICE_NAME / MIGRATE_JOB_NAME and the image path
-#   #            `toktickit/toktickit` (Artifact Registry repo / image name)
+#   # Resource names default to $PREFIX ($PREFIX-migrate, $PREFIX/$PREFIX)
 #   # CHANGE ME: how the migration is run (the Cloud Run job is created by
 #   #            deploy/deploy.sh step 10 — change the command there)
 # ==============================================================================

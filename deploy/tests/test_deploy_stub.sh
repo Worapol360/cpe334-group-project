@@ -167,3 +167,21 @@ if [ -f "$GCLOUD_LOG" ]; then
   echo 'FAIL: dry run called gcloud'; exit 1
 fi
 echo 'PASS: dry run makes no gcloud calls'
+
+# --- Default prefix test (no PREFIX set) ---------------------------------------
+unset PREFIX
+export GCLOUD_LOG="$TEST_STATE_DIR/default-prefix-calls"
+DRY_RUN=1 bash "$DEPLOY_SCRIPT" --demo > "$TEST_STATE_DIR/default-prefix-output"
+if ! grep -q 's3ed50763' "$TEST_STATE_DIR/default-prefix-output"; then
+  echo 'FAIL: default prefix s3ed50763 not found in dry run output'; exit 1
+fi
+if ! grep -q 's3ed50763-pg' "$TEST_STATE_DIR/default-prefix-output"; then
+  echo 'FAIL: default SQL instance s3ed50763-pg not found in dry run output'; exit 1
+fi
+if ! grep -q 's3ed50763-migrate' "$TEST_STATE_DIR/default-prefix-output"; then
+  echo 'FAIL: default migrate job s3ed50763-migrate not found in dry run output'; exit 1
+fi
+if ! grep -q 's3ed50763-database-url' "$TEST_STATE_DIR/default-prefix-output"; then
+  echo 'FAIL: default secret s3ed50763-database-url not found in dry run output'; exit 1
+fi
+echo 'PASS: default prefix s3ed50763 verified when PREFIX is unset'

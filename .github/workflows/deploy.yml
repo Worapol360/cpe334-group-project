@@ -44,7 +44,7 @@
 #   - Concurrency: https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
 #
 # ⭐ CHANGE ME — groups using another tech stack must edit (marked below):
-#   # CHANGE ME: SERVICE_NAME / MIGRATE_JOB_NAME / image path (toktickit)
+#   # Resource names default to $PREFIX ($PREFIX-migrate, $PREFIX/$PREFIX)
 #   # CHANGE ME: build step if your image is not built from the root Dockerfile
 #   # CHANGE ME: Python setup + smoke test if you use another smoke test
 # ##############################################################################
@@ -106,9 +106,10 @@ jobs:
       # ⚠️ Variable names GCP_PROJECT_ID / GCP_REGION must not change.
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       REGION: ${{ vars.GCP_REGION }}
-      # CHANGE ME: names of your Cloud Run service and migration job.
-      SERVICE_NAME: toktickit
-      MIGRATE_JOB_NAME: toktickit-migrate
+      PREFIX: s3ed50763
+      REPO_NAME: s3ed50763
+      SERVICE_NAME: s3ed50763
+      MIGRATE_JOB_NAME: s3ed50763-migrate
       # Image tag = commit SHA (or the rollback SHA that was typed in).
       IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
       ROLLBACK: ${{ inputs.image_tag != '' }}
@@ -146,14 +147,14 @@ jobs:
 
       # ------------------------------------------------------------------------
       # 4. Build and push the image (skipped for rollbacks)
-      #    CHANGE ME: image path `.../toktickit/toktickit` must match the
+      #    Image path `.../$REPO_NAME/$SERVICE_NAME` matches the
       #    Artifact Registry repo and service names (see deploy/release.sh).
       # ------------------------------------------------------------------------
       - name: Build and push image
         if: env.ROLLBACK != 'true'
         run: |
           gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
-          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/toktickit/toktickit:$IMAGE_TAG"
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$SERVICE_NAME:$IMAGE_TAG"
           docker build --tag "$IMAGE" .
           docker push "$IMAGE"
 

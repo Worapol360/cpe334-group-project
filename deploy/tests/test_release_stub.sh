@@ -10,7 +10,7 @@
 #   4. invalid tag    : rejected before any gcloud call
 # HOW TO RUN (repo root, needs bash):  bash deploy/tests/test_release_stub.sh
 #   Prints `PASS ...` lines; any failure exits non-zero. CI runs it too.
-# ⭐ CHANGE ME: if you rename the image path `toktickit/toktickit` or the job /
+# ⭐ CHANGE ME: if you rename the image path or the job /
 #    service names in deploy/release.sh, update the stub strings below.
 # ==============================================================================
 set -euo pipefail
@@ -27,7 +27,7 @@ echo "$*" >> "$CALL_LOG"
 case "$*" in
   'artifacts docker images describe '*)
     [[ "${FAIL_AT:-}" != image ]] || exit 1
-    echo 'asia-southeast1-docker.pkg.dev/release-test/toktickit/toktickit@sha256:abcdef' ;;
+    echo "${5%:*}@sha256:abcdef" ;;
   'run jobs execute '*) [[ "${FAIL_AT:-}" != migration ]] || exit 1 ;;
   'run services describe '*) echo 'https://demo.example.test' ;;
 esac
@@ -62,3 +62,15 @@ done
 if IMAGE_TAG='invalid;tag' bash "$ROOT/deploy/release.sh"; then exit 1; fi
 test ! -s "$CALL_LOG"
 echo 'PASS invalid tag rejected before GCP calls'
+
+: > "$CALL_LOG"
+unset PREFIX
+unset SERVICE_NAME
+unset MIGRATE_JOB_NAME
+unset REPO_NAME
+ROLLBACK=false bash "$ROOT/deploy/release.sh"
+grep -q 'run jobs update s3ed50763-migrate' "$CALL_LOG"
+grep -q 'run services update s3ed50763 ' "$CALL_LOG"
+grep -q 's3ed50763/s3ed50763@sha256:abcdef' "$CALL_LOG"
+echo 'PASS default prefix s3ed50763 verified in release.sh when PREFIX is unset'
+
