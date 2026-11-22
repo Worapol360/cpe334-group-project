@@ -15,7 +15,7 @@ This document describes how the application is built, tested and run today, whic
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433 | TODO — Issue: L5-08 persistence |
 | Secret Manager | Not used; secrets live only in local `server/.env` (never committed) | TODO — Issue: L5-05 GCP first deploy |
 | GitHub Actions | Workflows exist (`.github/workflows/ci-docker.yml`, `deploy.yml`, `dependabot.yml`) but the pipeline is not yet wired to a real project | TODO — Issues: L5-04 CI, L5-06 WIF and merge gate, L5-07 deploy workflow |
-| Docker image build for the app | `Dockerfile` (root) and `docker-compose.yml` services are present but compose `migrate`/`server`/`client` services are commented out | TODO — Issue: L5-03 Docker |
+| Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; health checks (`/api/health`, `/api/ready`) | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
 

@@ -6,6 +6,7 @@ import { config, serverRootDir } from './config.js';
 import { errorBody } from './api/errors.js';
 import { authRouter } from './api/routes/auth.js';
 import { healthRouter } from './api/routes/health.js';
+import { readyRouter } from './api/routes/ready.js';
 import { ownerSurveysRouter } from './api/routes/ownerSurveys.js';
 import { surveysRouter } from './api/routes/surveys.js';
 import { responsesRouter } from './api/routes/responses.js';
@@ -37,6 +38,7 @@ export function createApp() {
   app.use(cookieParser());
 
   app.use('/api/health', healthRouter);
+  app.use('/api/ready', readyRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/owner/surveys', ownerSurveysRouter);
   app.use('/api/surveys', surveysRouter);

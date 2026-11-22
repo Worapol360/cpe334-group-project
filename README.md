@@ -28,7 +28,35 @@ UAT is run locally; cloud deployment is not required for this release.
 - **Git**
 - If another FeedbackLoop clone or container already uses host port **5433**, run `docker compose --env-file server/.env down` in that folder first.
 
-## Quick start (PowerShell)
+## Running with Docker Compose (Lab 5)
+
+To run the entire FeedbackLoop stack (PostgreSQL database, automatic migrations & seeding, Express API, and React/Vite client) in Docker:
+
+1. Copy `.env.example` to `server/.env` (or configure environment variables):
+   ```powershell
+   Copy-Item server\.env.example server\.env
+   ```
+2. Build and start all services:
+   ```powershell
+   docker compose up --build -d
+   ```
+3. Verify running services:
+   - **Database (`feedbackloop-db`)**: PostgreSQL 16 on host port `5433` (healthy check via `pg_isready`)
+   - **Migrations (`feedbackloop-migrate`)**: Automatically runs `prisma migrate deploy` and `prisma:seed`, then exits with status `0`
+   - **API Server (`feedbackloop-server`)**: Express API listening on `http://localhost:3000`
+     - Health check: `curl http://localhost:3000/api/health`
+     - Readiness check: `curl http://localhost:3000/api/ready`
+   - **Web Client (`feedbackloop-client`)**: Nginx reverse proxy serving built Vite SPA on `http://localhost:5173` and proxying `/api` to the backend
+4. Stop containers (preserves database volume `postgres_data`):
+   ```powershell
+   docker compose down
+   ```
+5. Reset/wipe database volume (fresh start):
+   ```powershell
+   docker compose down -v
+   ```
+
+## Quick start (PowerShell - Local Dev without Dockerized App)
 
 Run these from the repository root, one step at a time. Leave steps 12 and 13 running in their own terminals.
 
