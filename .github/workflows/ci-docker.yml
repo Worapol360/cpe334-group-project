@@ -1,77 +1,83 @@
 # ##############################################################################
-# CI — "CI & Docker Build"
+# CI — "test-and-docker" (Issue L5-04 / #28)
 # ##############################################################################
 # WHAT THIS WORKFLOW DOES
-#   Runs the project's checks and is used in two ways:
-#     1) directly on every pull request to `main` (and manually), and
-#     2) as a REUSABLE workflow called by deploy.yml (`workflow_call`) so the
-#        deploy only starts after these checks pass.
-#   Steps: offline deploy-script tests -> backend tests (real PostgreSQL service)
-#          -> frontend tests + build -> verify the production Dockerfile builds.
-#   It does NOT deploy anything.
+#   On every pull request into sprint1-staging, sprint2-staging or main it:
+#     1) starts an ephemeral PostgreSQL 16 service container (app + test DBs),
+#     2) installs dependencies, runs Prisma generate/migrate/seed,
+#     3) runs the three suites: unit -> API+integration -> E2E (Playwright),
+#     4) builds the production Docker image (never pushed, no registry login),
+#     5) writes passed/failed counts to the job's step summary and uploads the
+#        Playwright report only when something failed.
+#   It needs NO GitHub secrets: every credential below is a throwaway CI-only
+#   value that lives only for the lifetime of the job.
 #
-# ⚠️ DO NOT RENAME (the lab guide refers to these names):
-#   - job id : test-and-docker
-#   - deploy.yml uses `environment: demo` and the 4 variables GCP_PROJECT_ID,
-#     GCP_REGION, WIF_PROVIDER, WIF_SERVICE_ACCOUNT — keep those names too.
+# ⚠️ DO NOT RENAME
+#   - job id AND job name: `test-and-docker` — L5-06 makes this the required
+#     status check on the branch protection rules; renaming it silently breaks
+#     the merge gate.
 #
 # REFERENCES
 #   - Workflow syntax      : https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions
-#   - Reusable workflows   : https://docs.github.com/en/actions/sharing-automations/reusing-workflows
 #   - Service containers   : https://docs.github.com/en/actions/using-containerized-services/about-service-containers
 #   - Concurrency          : https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs
-#   - Pin actions to a SHA : https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
-#
-# ⭐ CHANGE ME — groups using another tech stack must edit (marked below):
-#   # CHANGE ME: database service image / credentials
-#   # CHANGE ME: language setup steps (Node.js 24, Python 3.14)
-#   # CHANGE ME: install / migrate / seed / test commands, working-directory
-#   # CHANGE ME: docker image tag
 # ##############################################################################
 
-name: CI & Docker Build
+name: CI
 
 # ------------------------------------------------------------------------------
 # Triggers
-#   workflow_call     : lets deploy.yml reuse this workflow (do not remove).
-#   pull_request/main : checks every PR before merge.
+#   pull_request : the merge gate runs on PRs into the sprint branches and main.
+#                  No push trigger and no secrets are needed.
 #   workflow_dispatch : manual "Run workflow" button.
 # ------------------------------------------------------------------------------
 on:
-  workflow_call:
   pull_request:
-    branches: [main]
+    branches: [sprint1-staging, sprint2-staging, main]
   workflow_dispatch:
 
 # Least privilege: this workflow only needs to read the repository.
 permissions:
   contents: read
 
-# A newer run on the same ref cancels the older one (saves minutes).
+# One run per PR/branch at a time; a newer push cancels the outdated run.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# ------------------------------------------------------------------------------
+# Throwaway CI-only values for the ephemeral Postgres service container.
+# These are NOT secrets and must never be reused anywhere: they exist only for
+# the lifetime of this job. DATABASE_URL and DATABASE_URL_TEST deliberately
+# point at TWO different databases (the tests refuse to run otherwise).
+# ------------------------------------------------------------------------------
+env:
+  POSTGRES_USER: ci_feedbackloop
+  POSTGRES_PASSWORD: ci-only-fake-password
+  POSTGRES_DB: feedbackloop
+  DATABASE_URL: postgresql://ci_feedbackloop:ci-only-fake-password@localhost:5432/feedbackloop?schema=public
+  DATABASE_URL_TEST: postgresql://ci_feedbackloop:ci-only-fake-password@localhost:5432/feedbackloop_test?schema=public
+  SEED_PASSWORD: ci-only-fake-password
+  CORS_ALLOWED_ORIGINS: http://localhost:5173
+
 jobs:
-  # ⚠️ Job id must stay `test-and-docker`.
+  # ⚠️ Job id AND name must stay `test-and-docker` (required status check, L5-06).
   test-and-docker:
+    name: test-and-docker
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # --------------------------------------------------------------------------
-    # Temporary PostgreSQL used only by the tests. Throw-away CI values, not
-    # real secrets. CHANGE ME: use the database your project needs.
-    # --------------------------------------------------------------------------
+    # Ephemeral PostgreSQL 16 used only by the tests (throwaway values above).
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16
         env:
-          POSTGRES_USER: toktickit
-          POSTGRES_PASSWORD: toktickit
-          POSTGRES_DB: toktickit
+          POSTGRES_USER: ci_feedbackloop
+          POSTGRES_PASSWORD: ci-only-fake-password
+          POSTGRES_DB: feedbackloop
         ports:
           - 5432:5432
-        # Wait until the DB is healthy before the steps start.
+        # Wait until the DB accepts connections before the steps start.
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
@@ -80,9 +86,7 @@ jobs:
 
     steps:
       # ------------------------------------------------------------------------
-      # 1. Get the source code
-      #    (third-party actions are pinned to a commit SHA; the comment shows the
-      #     version. Dependabot keeps them updated — see .github/dependabot.yml)
+      # 1. Source code (no git credentials kept on the runner)
       # ------------------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -90,63 +94,154 @@ jobs:
           persist-credentials: false
 
       # ------------------------------------------------------------------------
-      # 2. Language runtimes
-      #    CHANGE ME: replace with the runtime(s) your stack needs.
+      # 2. Node.js version matching the Dockerfile (node:24-alpine) + npm cache
       # ------------------------------------------------------------------------
       - name: Setup Node.js 24
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
-
-      # Python is only needed for the deploy smoke-test unit tests below.
-      - name: Setup Python 3.14
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.14"
-
-      # ------------------------------------------------------------------------
-      # 3. Deploy scripts: syntax check + offline tests (NO access to GCP)
-      #    ⭐ IMPORTANT: guards deploy.sh / release.sh / smoke_test.py so a broken
-      #    script is caught before it can break a deployment.
-      #    CHANGE ME: keep only the checks for scripts your group actually uses.
-      # ------------------------------------------------------------------------
-      - name: Check deployment scripts without accessing GCP
-        run: |
-          bash -n deploy/deploy.sh deploy/teardown.sh deploy/release.sh
-          bash deploy/tests/test_deploy_stub.sh
-          bash deploy/tests/test_release_stub.sh
-          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+            e2e/package-lock.json
 
       # ------------------------------------------------------------------------
-      # 4. Backend: install -> migrate -> seed -> test
-      #    ⭐ IMPORTANT: a failing test fails the job (and therefore the deploy).
-      #    CHANGE ME: working-directory, DATABASE_URL and every command in `run:`.
+      # 3. Second (test) database.
+      #    The service container cannot mount db/init/ scripts, so create the
+      #    test database with psql (same idea as db/init/01-create-test-db.sh:
+      #    <POSTGRES_DB>_test). PGPASSWORD is the same throwaway value.
       # ------------------------------------------------------------------------
-      - name: Install & Test Backend (Prisma Migrate + Seed + Vitest)
-        working-directory: ./server
+      - name: Create test database
         env:
-          DATABASE_URL: postgresql://toktickit:toktickit@localhost:5432/toktickit?schema=public
-        run: |
-          npm ci
-          npx prisma migrate deploy
-          npm run prisma:seed
-          npm test
+          PGPASSWORD: ci-only-fake-password
+        run: >-
+          psql -h localhost -p 5432 -U ci_feedbackloop -d postgres
+          -c 'CREATE DATABASE feedbackloop_test;'
 
       # ------------------------------------------------------------------------
-      # 5. Frontend: install -> test -> production build
-      #    CHANGE ME: remove or replace if there is no separate frontend.
+      # 4. Install dependencies in every package that needs them
       # ------------------------------------------------------------------------
-      - name: Install, Test & Build Frontend (Vitest + Production Build)
-        working-directory: ./client
-        run: |
-          npm ci
-          npm test
-          npm run build
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
 
       # ------------------------------------------------------------------------
-      # 6. Make sure the production image still builds (image is not pushed here)
-      #    CHANGE ME: image tag.
+      # 5. Prisma: generate the client, migrate the APP database, seed it.
+      #    (The TEST database is migrated by the test harness itself —
+      #     server/tests/harness/db.js runs `prisma migrate deploy` against
+      #     DATABASE_URL_TEST when the suites import it.)
       # ------------------------------------------------------------------------
-      - name: Verify Unified Production Dockerfile Build
+      - name: Prisma generate
+        working-directory: server
+        run: npx prisma generate
+
+      - name: Prisma migrate deploy (app database)
+        working-directory: server
+        run: npx prisma migrate deploy
+
+      - name: Seed app database
+        working-directory: server
+        run: npm run prisma:seed
+
+      # ------------------------------------------------------------------------
+      # 6. The three suites, run separately so each gets its own status and its
+      #    own counts in the step summary. `!cancelled()` keeps the remaining
+      #    suites running (and reporting) even if an earlier one fails; the job
+      #    still fails if any step fails.
+      #    Reporters are the existing ones, selected via CLI flags only.
+      # ------------------------------------------------------------------------
+      - name: Unit tests (Vitest)
+        if: ${{ !cancelled() }}
         run: |
-          docker build -t toktickit-lab4:latest .
+          set -o pipefail
+          npm run test:unit 2>&1 | tee unit-tests.log && status=0 || status=$?
+          line=$(grep -E '^[[:space:]]*Tests[[:space:]]' unit-tests.log | tail -1 || true)
+          passed=$(printf '%s\n' "$line" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)
+          failed=$(printf '%s\n' "$line" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || true)
+          {
+            echo '### Unit tests (Vitest)'
+            echo "- Passed: ${passed:-0}"
+            echo "- Failed: ${failed:-0}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      - name: API and integration tests (Vitest + Supertest)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          npm run test:api 2>&1 | tee api-tests.log && status=0 || status=$?
+          line=$(grep -E '^[[:space:]]*Tests[[:space:]]' api-tests.log | tail -1 || true)
+          passed=$(printf '%s\n' "$line" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || true)
+          failed=$(printf '%s\n' "$line" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || true)
+          {
+            echo '### API and integration tests (Vitest)'
+            echo "- Passed: ${passed:-0}"
+            echo "- Failed: ${failed:-0}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # ------------------------------------------------------------------------
+      # 7. Production client build (also proves the Dockerfile's client stage
+      #    prerequisites are sane; the image itself rebuilds it in stage 1).
+      # ------------------------------------------------------------------------
+      - name: Build client
+        if: ${{ !cancelled() }}
+        working-directory: client
+        run: npm run build
+
+      # ------------------------------------------------------------------------
+      # 8. Playwright browsers (chromium only, with OS dependencies).
+      #    NOTE: e2e/playwright.config.js sets `channel: "chrome"`, i.e. the
+      #    tests launch the system Google Chrome at /opt/google/chrome/chrome
+      #    that the GitHub-hosted ubuntu runner already ships; chromium is
+      #    installed here as required by the lab setup.
+      # ------------------------------------------------------------------------
+      - name: Install Playwright browsers (chromium)
+        if: ${{ !cancelled() }}
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (Playwright)
+        if: ${{ !cancelled() }}
+        working-directory: e2e
+        run: |
+          set -o pipefail
+          npx playwright test --reporter=list,html 2>&1 | tee e2e-tests.log && status=0 || status=$?
+          passed=$(grep -oE '[0-9]+ passed' e2e-tests.log | tail -1 | grep -oE '[0-9]+' || true)
+          failed=$(grep -oE '[0-9]+ failed' e2e-tests.log | tail -1 | grep -oE '[0-9]+' || true)
+          {
+            echo '### E2E tests (Playwright)'
+            echo "- Passed: ${passed:-0}"
+            echo "- Failed: ${failed:-0}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # ------------------------------------------------------------------------
+      # 9. Verify the unified production image still builds.
+      #    No push, no registry login; tagged with the commit SHA.
+      # ------------------------------------------------------------------------
+      - name: Docker build (no push)
+        if: ${{ !cancelled() }}
+        run: docker build --tag "feedbackloop:${{ github.sha }}" .
+
+      # ------------------------------------------------------------------------
+      # 10. Playwright report only when something failed (keeps green runs light)
+      # ------------------------------------------------------------------------
+      - name: Upload Playwright report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          if-no-files-found: ignore
