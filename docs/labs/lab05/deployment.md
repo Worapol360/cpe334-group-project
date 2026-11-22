@@ -15,7 +15,7 @@ This document describes how the application is built, tested and run today, whic
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433 | TODO — Issue: L5-08 persistence |
 | Secret Manager | Not used; secrets live only in local `server/.env` (never committed) | TODO — Issue: L5-05 GCP first deploy |
 | GitHub Actions | Workflows exist (`.github/workflows/ci-docker.yml`, `deploy.yml`, `dependabot.yml`) but the pipeline is not yet wired to a real project | TODO — Issues: L5-04 CI, L5-06 WIF and merge gate, L5-07 deploy workflow |
-| Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; health checks (`/api/health`, `/api/ready`) | Done (Issue: #27) |
+| Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
 
@@ -112,3 +112,59 @@ npm test                             # all three, in that order
 - **Release procedure**: TODO (Issue: L5-07) — expected shape: push to `main` → CI (`ci-docker.yml`) → `deploy.yml` builds the image tagged with the commit SHA → `deploy/release.sh` migrates and updates the Cloud Run service → `deploy/smoke_test.py` checks the public URL; manual rollback by re-running the workflow with a previous image tag.
 - **How to find the running commit**: TODO (Issue: L5-07) — the image tag is the full commit SHA; confirm via the workflow's deployment summary / Cloud Run revision metadata.
 - **Persistence evidence**: TODO (Issue: L5-08) — demonstrate data (including sessions) surviving a container restart against Cloud SQL.
+
+## 8. Docker Verification and Evidence (L5-03 / #27)
+
+### 8.1 Docker Compose Services and Startup
+Command:
+```powershell
+docker compose --env-file server/.env up --build -d
+```
+All images built, containers created, migrations applied, and services marked healthy before dependents start.
+
+### 8.2 Container Status (`docker compose ps`)
+Command:
+```powershell
+docker compose --env-file server/.env ps -a
+```
+Output:
+```text
+NAME                   IMAGE                          COMMAND                  SERVICE   CREATED          STATUS                      PORTS
+feedbackloop-client    cpe334-group-project-client    "/docker-entrypoint.…"   client    34 seconds ago   Up 14 seconds               0.0.0.0:5173->80/tcp, [::]:5173->80/tcp
+feedbackloop-db        postgres:16-alpine             "docker-entrypoint.s…"   db        34 seconds ago   Up 33 seconds (healthy)     0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+feedbackloop-migrate   cpe334-group-project-migrate   "./docker-entrypoint…"   migrate   34 seconds ago   Exited (0) 21 seconds ago   
+feedbackloop-server    cpe334-group-project-server    "./docker-entrypoint…"   server    34 seconds ago   Up 20 seconds (healthy)     0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+```
+
+### 8.3 Health and Readiness Probes
+Command:
+```powershell
+curl.exe -i http://localhost:3000/api/health
+```
+Output:
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 31
+{"status":"ok","version":"dev"}
+```
+
+Command:
+```powershell
+curl.exe -i http://localhost:3000/api/ready
+```
+Output:
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 35
+{"status":"ready","db":"connected"}
+```
+
+### 8.4 C-03 Persistence Across Restart
+Command:
+```powershell
+docker compose --env-file server/.env down
+docker compose --env-file server/.env up -d
+```
+Verified data persistence: login with seeded `owner1@example.test` and demo surveys persist intact without re-seeding.

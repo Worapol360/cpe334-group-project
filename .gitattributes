@@ -1,3 +1,4 @@
 # Enforce LF line endings for shell scripts and dockerfiles
 *.sh text eol=lf
 Dockerfile* text eol=lf
+

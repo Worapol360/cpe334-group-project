@@ -32,28 +32,32 @@ UAT is run locally; cloud deployment is not required for this release.
 
 To run the entire FeedbackLoop stack (PostgreSQL database, automatic migrations & seeding, Express API, and React/Vite client) in Docker:
 
-1. Copy `.env.example` to `server/.env` (or configure environment variables):
+1. Copy `.env.example` to `server/.env` and ensure `SEED_PASSWORD` and `POSTGRES_PASSWORD` are set:
    ```powershell
    Copy-Item server\.env.example server\.env
    ```
-2. Build and start all services:
+2. Build and start all services using `server/.env`:
    ```powershell
-   docker compose up --build -d
+   docker compose --env-file server/.env up --build -d
    ```
 3. Verify running services:
-   - **Database (`feedbackloop-db`)**: PostgreSQL 16 on host port `5433` (healthy check via `pg_isready`)
-   - **Migrations (`feedbackloop-migrate`)**: Automatically runs `prisma migrate deploy` and `prisma:seed`, then exits with status `0`
-   - **API Server (`feedbackloop-server`)**: Express API listening on `http://localhost:3000`
+   - Check container status:
+     ```powershell
+     docker compose --env-file server/.env ps
+     ```
+   - **Database (`feedbackloop-db`)**: PostgreSQL 16 on host port `5433` (`Up (healthy)` via `pg_isready`)
+   - **Migrations (`feedbackloop-migrate`)**: Automatically runs `prisma migrate deploy` and `prisma:seed`, then exits with status `0` (`Exited (0)`)
+   - **API Server (`feedbackloop-server`)**: Express API listening on `http://localhost:3000` (`Up (healthy)` via `/api/ready`)
      - Health check: `curl http://localhost:3000/api/health`
      - Readiness check: `curl http://localhost:3000/api/ready`
-   - **Web Client (`feedbackloop-client`)**: Nginx reverse proxy serving built Vite SPA on `http://localhost:5173` and proxying `/api` to the backend
+   - **Web Client (`feedbackloop-client`)**: Nginx reverse proxy serving built Vite SPA on `http://localhost:5173` (`Up`) and proxying `/api` to the backend
 4. Stop containers (preserves database volume `postgres_data`):
    ```powershell
-   docker compose down
+   docker compose --env-file server/.env down
    ```
 5. Reset/wipe database volume (fresh start):
    ```powershell
-   docker compose down -v
+   docker compose --env-file server/.env down -v
    ```
 
 ## Quick start (PowerShell - Local Dev without Dockerized App)

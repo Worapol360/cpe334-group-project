@@ -4,16 +4,16 @@ services:
     container_name: feedbackloop-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-feedbackloop}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_DB: ${POSTGRES_DB:-feedbackloop}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-feedbackloop} -d ${POSTGRES_DB:-feedbackloop}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?set in .env} -d ${POSTGRES_DB:?set in .env}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -30,8 +30,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       APP_ENV: ${APP_ENV:-production}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-feedbackloop}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-feedbackloop}?schema=public
-      SEED_PASSWORD: ${SEED_PASSWORD:-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}?schema=public
+      SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
     command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
 
   server:
@@ -50,10 +50,16 @@ services:
       APP_ENV: production
       TZ: Asia/Bangkok
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-feedbackloop}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-feedbackloop}?schema=public
-      SEED_PASSWORD: ${SEED_PASSWORD:-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}?schema=public
+      SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 3s
 
   client:
     build:
@@ -64,7 +70,8 @@ services:
     container_name: feedbackloop-client
     restart: unless-stopped
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     ports:
       - "5173:80"
 
