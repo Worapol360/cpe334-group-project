@@ -174,8 +174,8 @@ Verified data persistence: login with seeded `owner1@example.test` and demo surv
 ### 9.1 Workflow file and triggers
 
 - **File**: `.github/workflows/ci-docker.yml` (workflow name `CI`, replaced by this issue; Dependabot config in `.github/dependabot.yml`).
-- **Triggers**: `pull_request` into `sprint1-staging`, `sprint2-staging` and `main`, plus manual `workflow_dispatch`. There is deliberately **no `push` trigger** and the workflow needs **no GitHub secrets**.
-- **Permissions**: `contents: read` only. **Concurrency**: one run per PR (`ci-<workflow>-<PR number>`), `cancel-in-progress: true` so a newer push cancels the outdated run. **Timeout**: 30 minutes on the job.
+- **Triggers**: `pull_request` into `sprint1-staging`, `sprint2-staging` and `main`, plus manual `workflow_dispatch`. The workflow is also callable via `workflow_call` so `deploy.yml` can run CI again before deploying (L5-07). There is deliberately **no `push` trigger** and the workflow needs **no GitHub secrets**.
+- **Permissions**: `contents: read` only. **Concurrency**: group `ci-<workflow>-<PR number>` (falls back to the ref when there is no PR number), with `cancel-in-progress` limited to `pull_request` runs so a newer push cancels an outdated PR run but never a deploy or manual run. **Timeout**: 30 minutes on the job.
 - The job creates an ephemeral `postgres:16` service container; because a service container cannot mount `db/init/`, a `psql` step creates the second database (`feedbackloop_test`) exactly like `db/init/01-create-test-db.sh` does locally.
 
 ### 9.2 Job name — do not rename
@@ -227,4 +227,4 @@ All values live in the workflow's top-level `env:` block, are obviously fake, an
 
 All three are pinned to verified full 40-character commit SHAs (verified read-only with `git ls-remote` against the action repositories) — **no unpinned actions remain**. `.github/dependabot.yml` opens weekly bump PRs for `github-actions` and for each npm package directory (`/server`, `/client`, `/e2e`), max 3 open PRs each, targeting `sprint1-staging`.
 
-Note for L5-07: `deploy.yml` still calls this workflow with `uses: ./.github/workflows/ci-docker.yml` (`workflow_call`), which this issue removed together with the push trigger; the deploy workflow must be rewired when it is rewritten.
+Note for L5-07: `deploy.yml` calls this workflow with `uses: ./.github/workflows/ci-docker.yml`, which works again now that `workflow_call` is restored (no inputs or secrets are passed); `cancel-in-progress` is limited to `pull_request` runs, so a deploy-triggered CI run on `main` is never cancelled by concurrency.

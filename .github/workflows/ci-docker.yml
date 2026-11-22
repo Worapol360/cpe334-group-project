@@ -29,21 +29,30 @@ name: CI
 # Triggers
 #   pull_request : the merge gate runs on PRs into the sprint branches and main.
 #                  No push trigger and no secrets are needed.
+#   workflow_call : lets deploy.yml (L5-07) reuse this CI before deploying.
+#                   No inputs/secrets are passed by the caller, so none are
+#                   declared here.
 #   workflow_dispatch : manual "Run workflow" button.
 # ------------------------------------------------------------------------------
 on:
   pull_request:
     branches: [sprint1-staging, sprint2-staging, main]
+  workflow_call:
   workflow_dispatch:
 
 # Least privilege: this workflow only needs to read the repository.
+# (A caller can only narrow this further; deploy.yml's calling job grants
+#  `contents: read`, so the permission is always available when called.)
 permissions:
   contents: read
 
-# One run per PR/branch at a time; a newer push cancels the outdated run.
+# One run per PR at a time. The group falls back to github.ref when no PR
+# number exists (workflow_dispatch, workflow_call from deploy.yml), and only
+# a pull_request run may cancel an older one — deploy runs are never
+# cancelled by this concurrency setting.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # ------------------------------------------------------------------------------
 # Throwaway CI-only values for the ephemeral Postgres service container.
