@@ -36,7 +36,7 @@ export const config = {
   cookieSecure: readBool('COOKIE_SECURE', false),
   databaseUrl: process.env.DATABASE_URL,
   databaseUrlTest: process.env.DATABASE_URL_TEST,
-  seedPassword: process.env.SEED_PASSWORD,
+  seedPassword: process.env.SEED_PASSWORD || process.env.DEMO_USER_PASSWORD,
 };
 
 export const serverRootDir = serverRoot;
