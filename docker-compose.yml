@@ -18,54 +18,62 @@ services:
       timeout: 5s
       retries: 10
 
-# TODO Lab 5: re-enable migrate/server/client once F-01 is implemented.
-#
-#   migrate:
-#     build:
-#       context: ./server
-#       dockerfile: Dockerfile
-#     container_name: feedbackloop-migrate
-#     restart: "no"
-#     depends_on:
-#       db:
-#         condition: service_healthy
-#     environment:
-#       NODE_ENV: ${NODE_ENV:-production}
-#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
-#       SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
-#     command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
-#
-#   server:
-#     build:
-#       context: ./server
-#       dockerfile: Dockerfile
-#     container_name: feedbackloop-server
-#     restart: unless-stopped
-#     depends_on:
-#       db:
-#         condition: service_healthy
-#       migrate:
-#         condition: service_completed_successfully
-#     environment:
-#       NODE_ENV: production
-#       TZ: Asia/Bangkok
-#       PORT: 3000
-#       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
-#     ports:
-#       - "3000:3000"
-#
-#   client:
-#     build:
-#       context: ./client
-#       dockerfile: Dockerfile
-#       args:
-#         VITE_API_URL: ""
-#     container_name: feedbackloop-client
-#     restart: unless-stopped
-#     depends_on:
-#       - server
-#     ports:
-#       - "5173:80"
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: feedbackloop-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}?schema=public
+      SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: feedbackloop-server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      TZ: Asia/Bangkok
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}?schema=public
+      SEED_PASSWORD: ${SEED_PASSWORD:?set in .env}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 3s
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: feedbackloop-client
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "5173:80"
 
 volumes:
   postgres_data:
