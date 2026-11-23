@@ -37,6 +37,7 @@ export ROLLBACK=false
 bash "$ROOT/deploy/release.sh"
 grep -q 'run jobs execute .*--wait' "$CALL_LOG"
 grep -q 'run services update .*@sha256:abcdef' "$CALL_LOG"
+grep -q 'run services update .*--update-env-vars=APP_VERSION=1111111111111111111111111111111111111111' "$CALL_LOG"
 grep -q 'SERVICE_URL=https://demo.example.test' "$GITHUB_ENV"
 echo 'PASS normal release uses digest and waits for migration'
 

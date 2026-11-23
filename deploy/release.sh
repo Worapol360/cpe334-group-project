@@ -70,7 +70,7 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Point the Cloud Run service at the image and send it 100% of traffic
 # ------------------------------------------------------------------------------
-gcloud run services update "$SERVICE_NAME" --image="$DIGEST_IMAGE" --project="$PROJECT_ID" --region="$REGION" --quiet
+gcloud run services update "$SERVICE_NAME" --image="$DIGEST_IMAGE" --update-env-vars="APP_VERSION=$IMAGE_TAG" --project="$PROJECT_ID" --region="$REGION" --quiet
 # Restore 100% traffic to the new latest revision even if it was previously pinned.
 gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project="$PROJECT_ID" --region="$REGION" --quiet
 
