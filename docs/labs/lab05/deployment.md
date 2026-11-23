@@ -123,7 +123,19 @@ npm test                             # all three, in that order
   - `s3ed50763-demo-password`
 - **Release procedure**: TODO (Issue: L5-07) — expected shape: push to `main` → CI (`ci-docker.yml`) → `deploy.yml` builds the image tagged with the commit SHA → `deploy/release.sh` migrates and updates the Cloud Run service → `deploy/smoke_test.py` checks the public URL; manual rollback by re-running the workflow with a previous image tag.
 - **How to find the running commit**: TODO (Issue: L5-07) — the image tag is the full commit SHA; confirm via the workflow's deployment summary / Cloud Run revision metadata.
-- **Persistence evidence**: TODO (Issue: L5-08) — demonstrate data (including sessions) surviving a container restart against Cloud SQL.
+- **Persistence evidence (L5-08)**: procedure and evidence template — see [persistence-test.md](persistence-test.md).
+
+### 7.1 Persistence test result (L5-08 / C-05)
+
+Full procedure, command packs, evidence table and cost-control commands: **[persistence-test.md](persistence-test.md)**.
+
+| Check | Before (time, revision, version) | After restart | After redeploy | Result |
+|---|---|---|---|---|
+| Distinctive survey + response counts survive | TODO | TODO | TODO | TODO: fill after the test |
+| Session works (or re-login) after restart | TODO | TODO | TODO | TODO: fill after the test |
+| `/api/health` version after redeploy = new commit SHA | TODO | TODO | TODO | TODO: fill after the test |
+
+**Cost-control summary**: Cloud Run `min-instances 0` / `max-instances 3` (idle scales to zero); Cloud SQL `s3ed50763-pg` on tier `db-f1-micro`; pause with `--activation-policy=NEVER` when idle and resume with `ALWAYS` before any test or release (stopping does not delete data). Read-only describe commands and the state-changing pause/resume pack are in [persistence-test.md §8](persistence-test.md#8-cost-control).
 
 ## 8. Docker Verification and Evidence (L5-03 / #27)
 
