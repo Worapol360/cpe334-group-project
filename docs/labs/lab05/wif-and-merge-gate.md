@@ -11,6 +11,21 @@ Companion to [deployment.md](deployment.md). Documentation only: every command b
 - **Restrict further to `refs/heads/main`?** Yes — recommended: it costs nothing (`deploy.yml` only triggers on `main`, including `workflow_dispatch` rollbacks) while stopping any other branch or workflow in the repo from presenting a deployer token. The one-line trade-off: you cannot run a WIF smoke test from a non-main branch. If you skip the `ref` clause, keep the repository clause.
 - GitHub environment `demo` is part of the OIDC subject (`:environment:demo`), so the pool binding in §2 pins the full subject, not just the repo.
 
+### GitHub OIDC subject by job context
+
+The `sub` claim changes with the job's context — there is no single "repo subject":
+
+| Job context | OIDC subject (`sub`) |
+|---|---|
+| Push to `main` (no `environment:`) | `repo:<owner>/<repo>:ref:refs/heads/main` |
+| `pull_request` | `repo:<owner>/<repo>:pull_request` |
+| Job with `environment: demo` (push to `main` **or** `workflow_dispatch`) | `repo:<owner>/<repo>:environment:demo` (no ref) |
+| `workflow_dispatch` without `environment:` | `repo:<owner>/<repo>:ref:refs/heads/main` |
+
+**The deploy job uses the third row.** `.github/workflows/deploy.yml` declares `environment: demo` on the `deploy` job, and that job runs on both triggers (push to `main`, manual `workflow_dispatch`), so its subject is exactly `repo:Worapol360/cpe334-group-project:environment:demo` — no `:ref:` segment. The IAM binding in §2.5 uses `principal://.../subject/repo:Worapol360/cpe334-group-project:environment:demo` to match it one-to-one, while the provider attribute condition (`repository` + `refs/heads/main`) matches the triggers the workflow accepts.
+
+⚠ Adding or removing `environment:` in a job **changes the subject** (rows 1/3 swap); you must then update the binding member — or the attribute condition — before the next run, or authentication fails with "The given credential is rejected by the attribute condition".
+
 ## 2. Command pack (PowerShell, one command per block)
 
 Run from anywhere with `gcloud` authenticated to project `cpe-se-course-2026`. Replace every `<PLACEHOLDER>` first. Blocks marked **⚠ IAM CHANGE — read carefully** modify IAM policy.
@@ -50,10 +65,12 @@ Purpose: trust `token.actions.githubusercontent.com` tokens only from this repos
 **5 — ⚠ IAM CHANGE — let the GitHub principal assume the deployer SA**
 
 ```powershell
-gcloud iam service-accounts add-iam-policy-binding s3ed50763-deployer@cpe-se-course-2026.iam.gserviceaccount.com --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_ID>/subject/repo:Worapol360/cpe334-group-project:ref:refs/heads/main:environment:demo" --role=roles/iam.workloadIdentityUser --project=cpe-se-course-2026
+gcloud iam service-accounts add-iam-policy-binding s3ed50763-deployer@cpe-se-course-2026.iam.gserviceaccount.com --member="principal://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_ID>/subject/repo:Worapol360/cpe334-group-project:environment:demo" --role=roles/iam.workloadIdentityUser --project=cpe-se-course-2026
 ```
 
-Purpose: grants `roles/iam.workloadIdentityUser` to exactly one repo principalSet (this repo, `main`, environment `demo`). Before running, print your real subject with `gh api repos/Worapol360/cpe334-group-project/actions/oidc/customization/sub` and swap in the exact claim if it uses immutable owner/repo IDs.
+Purpose: grants `roles/iam.workloadIdentityUser` to **one single subject** — `principal://.../subject/<SUBJECT>` is the correct form for a single OIDC subject; a `principalSet://.../subject/...` member does not exist (the `principalSet` form is only for sets such as `principalSet://.../attribute.repository/<owner>/<repo>`). The subject is the deploy job's actual context: this repo, GitHub environment `demo` (see the subject table in §1) — **no `:ref:` segment**, because an environment job's subject drops the ref. The provider attribute condition (`assertion.repository=='Worapol360/cpe334-group-project' && assertion.ref=='refs/heads/main'`) already restricts the same repository and the branches this workflow runs on, so binding and condition agree. Before running, print your real subject with `gh api repos/Worapol360/cpe334-group-project/actions/oidc/customization/sub` and swap in the exact claim if it uses immutable owner/repo IDs.
+
+Equivalent, coarser alternative (binds every job in the repo that satisfies the attribute condition instead of just environment `demo`): `principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_ID>/attribute.repository/Worapol360/cpe334-group-project` — note it is `attribute.repository/<owner>/<repo>`, never `attribute.repository` combined with a subject.
 
 **6 — ⚠ IAM CHANGE — Cloud Run update/execute rights**
 
@@ -113,7 +130,7 @@ Purpose: list the project role bindings held by the deployer SA (expect `roles/r
 gcloud iam service-accounts get-iam-policy s3ed50763-deployer@cpe-se-course-2026.iam.gserviceaccount.com --project=cpe-se-course-2026
 ```
 
-Purpose: list the SA-level bindings (expect the `roles/iam.workloadIdentityUser` principalSet).
+Purpose: list the SA-level bindings (expect the `roles/iam.workloadIdentityUser` binding on the `principal://.../subject/repo:Worapol360/cpe334-group-project:environment:demo` member).
 
 ```powershell
 gcloud projects describe cpe-se-course-2026 --format="value(projectNumber)"
@@ -159,9 +176,19 @@ Repository-wide — Settings → Code security and analysis:
 4. Expected result: job `test-and-docker` fails; the PR shows the required check failing and the merge button disabled ("Required" / merge blocked).
 5. **Close the PR without merging.** Keep the temp branch, the closed PR and the failed CI run as evidence. Never merge it; never touch the released application.
 
+**Result** (C-02 evidence):
+
+- Ruleset **`protect-main-and-staging`** active on `main` and `sprint1-staging`.
+- Demo PR **#39** from `temp/lab5-failing-check` into `sprint1-staging`.
+- Check **`CI / test-and-docker (pull_request)`** failed (failing after 2m).
+- GitHub **blocked the Merge button** (required check not passing).
+- **PR #39 closed without merging**; the branch, the PR and the CI run were kept as evidence.
+- Screenshot kept for the Lab 5 report.
+- Run link: `<run link>` · Breaking commit: `<commit>`
+
 ## 6. Known limitations
 
 - WIF can only be proven by a real run: the first `deploy.yml` run (L5-07). Sections 2–3 are setup and read-only verification only — no workflow was executed here.
 - A required status check must have run at least once on the repository before it appears in the ruleset's "Add checks" list; run one PR through `test-and-docker` first.
-- The OIDC `sub` claim may carry immutable owner/repo IDs and the `:environment:demo` suffix; the pool binding must match it exactly or authentication fails with "The given credential is rejected by the attribute condition".
+- The OIDC `sub` claim varies by job context (see the table in §1): an `environment: demo` job has `repo:<owner>/<repo>:environment:demo` with **no ref**, while a plain push to `main` has `repo:<owner>/<repo>:ref:refs/heads/main`. The pool binding must match the deploy job's subject exactly (the `principal://.../subject/...` member in §2.5) or authentication fails with "The given credential is rejected by the attribute condition". The claim may also carry immutable owner/repo IDs — print it with the `gh api` command in §2.5 if in doubt.
 - `sprint2-staging` ruleset is added when the branch exists.
