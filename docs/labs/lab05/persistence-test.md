@@ -1,6 +1,6 @@
 # Persistence test procedure and evidence — C-05 (R-04) / Issue L5-08
 
-**Status: procedure ready; results `TODO: fill after the test`.**
+**Status: PARTIAL — Step 1 = DONE, Step 2 (restart) = PASS, Step 3 (redeploy) = PENDING; overall C-05 = PARTIAL (restart proven, redeploy pending).**
 
 ## 1. Goal and pass criteria
 
@@ -24,20 +24,25 @@ Prove **R-04** / check **C-05**: application data (surveys, responses) and serve
 
 ## 3. Step 1 — Create identifiable records (live URL)
 
-1. As the **owner**, log in on the public URL, create a survey with a distinctive title: `L5-08 persistence <YYYY-MM-DD HH:MM>` (local time).
+1. As the **owner**, log in on the public URL, create a survey with a distinctive title: `L5-08 persistence <YYYY-MM-DD HH:MM>` (local time). *(Actual run title: `Lab5 Persistence Test 7a705e2`.)*
 2. Add at least one question and **publish** the survey.
 3. As the **respondent**, log in and submit **one** response.
 4. As the **owner**, open the survey **summary** and note the response count.
-5. Record the run (placeholders):
+5. Record the run — **Step 1 = DONE** (real run of 2026-11-24):
 
 | Field | Value |
 |---|---|
-| Survey title | `L5-08 persistence <YYYY-MM-DD HH:MM>` |
-| Survey ID | `<PLACEHOLDER>` |
-| Response count | `<PLACEHOLDER>` |
-| Time (local, ISO) | `<PLACEHOLDER>` |
-| `/api/health` version | `<PLACEHOLDER>` |
-| Current Cloud Run revision | `<PLACEHOLDER>` |
+| Survey title | `Lab5 Persistence Test 7a705e2` |
+| Survey ID | `5` |
+| Response count | `1` (Yes: 1 / 100.0%, No: 0 / 0.0%) |
+| Owner account used | `owner1@example.test` (password never recorded) |
+| Time (UTC, ISO) | `2026-11-24T00:24:32.958Z` (page "Updated at 2026-11-24 00:24:32.958") |
+| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` |
+| Current Cloud Run revision | `s3ed50763-00003-6dt` |
+
+**Figure 1. C-05 (R-04): Owner summary before restart, survey ID 5, 1 response; URL https://s3ed50763-4d7hbszvwq-as.a.run.app; revision s3ed50763-00003-6dt; commit 7a705e2**
+
+![Figure 1. Owner summary before restart](images/figure-1-before-restart.png)
 
 Read-only commands:
 
@@ -57,7 +62,7 @@ Force a fresh container **without changing the image** by updating a harmless en
 
 ```powershell
 # 1. Purpose: confirm the image digest currently deployed (baseline, read-only)
-gcloud run revisions describe s3ed50763-00002-tv6 --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.template.spec.containers[0].image)"
+gcloud run revisions describe s3ed50763-00003-6dt --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.template.spec.containers[0].image)"
 ```
 
 ```powershell
@@ -83,13 +88,32 @@ gcloud run revisions describe <new-revision-name> --region=asia-southeast1 --pro
 
 **Observe scale to zero** (read-only, time-dependent): leave the service idle ~10 minutes, then in Console → Cloud Run `s3ed50763` → **Metrics** confirm *Container instance count* = 0 (min instances is 0). The next request cold-starts (slower first response). No command changes anything here.
 
-**Verify after restart:**
+**Actual restart trigger used (Step 2 = PASS):**
 
-1. `/api/health` still 200 (curl above).
-2. Owner logs in (or existing session still valid — within TTL) and opens the survey summary: same title, same survey ID, **same response count**.
-3. Respondent's response is still listed.
+```powershell
+# [CHANGES SERVICE] Purpose: force a new revision from the same image via a restart marker env var
+gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --update-env-vars="PERSISTENCE_TEST_AT=$(date -u +%Y%m%dT%H%M%SZ)"
+```
+
+> **Note:** `PERSISTENCE_TEST_AT` is a harmless restart marker env var that forces a new revision. The application does not read it; it is not in `.env.example`; it remains set on the service.
+
+**Figure 2. C-05 (R-04): Cloud Shell env var update and new revision s3ed50763-00004-ssd serving 100% traffic, same image from 7a705e2; URL https://s3ed50763-4d7hbszvwq-as.a.run.app; commit 7a705e2**
+
+![Figure 2. Cloud Shell env var update and new revision at 100% traffic](images/figure-2-after-restart-revision.png)
+
+**Verify after restart:** (recorded 2026-11-24T00:28:30.472Z)
+
+1. `/api/health` still 200 → `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged SHA).
+2. Owner session on `owner1@example.test` still worked within the 60-minute TTL; the summary shows the same title, **survey ID 5**, **1 response**; `GET /api/surveys/5/summary` returned 200 after refresh (DevTools "200 fetch").
+3. New revision `s3ed50763-00004-ssd` serving 100% traffic, same image from 7a705e2.
+
+**Figure 3. C-05 (R-04): Owner summary after restart, survey ID 5, 1 response; URL https://s3ed50763-4d7hbszvwq-as.a.run.app; revision s3ed50763-00004-ssd; commit 7a705e2**
+
+![Figure 3. Owner summary after restart with DevTools Network 200 fetch](images/figure-3-after-restart-summary.png)
 
 ## 5. Step 3 — Redeploy through the pipeline
+
+**Status: PENDING.** It will be executed through the next release PR to `main` and recorded later as **Figure 4** (deploy run step summary) and **Figure 5** (`/api/health` after redeploy).
 
 **Trigger** — `deploy.yml` supports `workflow_dispatch`, so:
 
@@ -131,26 +155,28 @@ gcloud run services update-traffic s3ed50763 --to-revisions=<earlier-revision>=1
 gcloud run services update-traffic s3ed50763 --to-latest --region=asia-southeast1 --project=cpe-se-course-2026
 ```
 
-## 7. Evidence table (template)
+## 7. Evidence table
 
-`TODO: fill after the test.`
+Release under test: commit `7a705e28527f7d32b78a9fc0f867f23414bfff19`. Service `s3ed50763`, region `asia-southeast1`, project `cpe-se-course-2026`.
 
 | Check | Before (time, revision, version) | After restart | After redeploy | Result | Screenshot figure |
 |---|---|---|---|---|---|
-| Distinctive survey `L5-08 persistence <...>` exists | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | Figure 1 / 3 |
-| Response count unchanged (owner summary) | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | Figure 1 / 3 |
-| Session works (or re-login works) | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | — |
-| `/api/health` version | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` (= new SHA) | `<PLACEHOLDER>` | Figure 5 |
-| New revision serving 100% traffic / same image digest | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | `<PLACEHOLDER>` | Figure 2 / 4 |
-| Rollback + roll forward records intact (optional) | — | — | `<PLACEHOLDER>` | `<PLACEHOLDER>` | — |
+| Distinctive survey `Lab5 Persistence Test 7a705e2` (ID 5) exists | `2026-11-24T00:24:32.958Z`, `s3ed50763-00003-6dt`, survey ID `5` | `2026-11-24T00:28:30.472Z`, `s3ed50763-00004-ssd`, survey ID `5` unchanged | PENDING | Step 1 = DONE; Step 2 = PASS; Step 3 = PENDING | Figure 1 / 3 |
+| Response count unchanged (owner summary) | `1` (Yes: 1 / 100.0%, No: 0 / 0.0%) | `1` (unchanged) | PENDING | Step 1 = DONE; Step 2 = PASS; Step 3 = PENDING | Figure 1 / 3 |
+| Session works (or re-login works) | owner `owner1@example.test` logged in (password never recorded) | session still worked within the 60-minute TTL | PENDING | Step 2 = PASS | — |
+| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged) | PENDING (must equal new SHA) | Step 2 = PASS; Step 3 = PENDING | Figure 5 (PENDING) |
+| New revision serving 100% traffic / same image digest | `s3ed50763-00003-6dt` | `s3ed50763-00004-ssd`, 100% traffic, same image from `7a705e2` | PENDING | Step 2 = PASS; Step 3 = PENDING | Figure 2 / 4 |
+| Rollback + roll forward records intact (optional) | — | — | PENDING | not run (optional) | — |
+
+**Overall C-05 = PARTIAL (restart proven, redeploy pending).** The "After redeploy" column stays **PENDING**; Figures 4 and 5 will be added after the release PR.
 
 **Screenshots to take** (URL bar visible, revision/time visible, **no secrets** — no passwords, cookies, connection strings, or env values):
 
-1. Owner summary with the distinctive title and response counts (public URL visible).
-2. Revision list / describe showing the new revision at 100% traffic, with timestamp.
-3. The same owner summary **after** the restart.
-4. The Deploy demo run step summary (commit SHA, digest, smoke test passed).
-5. `/api/health` output **after** the redeploy (`version` = new commit SHA).
+1. ✅ Taken — Figure 1: owner summary with the distinctive title and response counts (public URL visible).
+2. ✅ Taken — Figure 2: revision update showing the new revision at 100% traffic, with timestamp.
+3. ✅ Taken — Figure 3: the same owner summary **after** the restart.
+4. ⬜ PENDING — Figure 4: the Deploy demo run step summary (commit SHA, digest, smoke test passed).
+5. ⬜ PENDING — Figure 5: `/api/health` output **after** the redeploy (`version` = new commit SHA).
 
 **Caption format:** `Figure N. C-05 (R-04): <what> ; <URL>; <revision>; <commit>`
 
