@@ -48,7 +48,7 @@ function Footer() {
 
   return (
     <footer data-testid="app-footer" style={{ textAlign: 'center', padding: '1.5rem', color: '#6b7280', fontSize: '0.85rem' }}>
-      FeedbackLoop • Lab 5 Release{version ? ` (${version})` : ' (v0.1.2-lab5)'}
+      FeedbackLoop • Lab 5 Release{version ? ` (${version})` : ''}
     </footer>
   );
 }

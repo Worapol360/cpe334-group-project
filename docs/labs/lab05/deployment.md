@@ -10,7 +10,7 @@ This document describes how the application is built, tested and run today, whic
 
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
-| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Done (Issue: #29, #31) |
+| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Implemented — pending first run on main (Issue: #29, #31) |
 | Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
@@ -299,7 +299,10 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}` (asserts `version == IMAGE_TAG`)
    - `GET /api/ready` -> HTTP 200 `{"status":"ready","db":"connected"}`
    - `GET /` -> HTTP 200 HTML (`<html...`)
-   - Optional cookie-based authenticated checks (`/api/auth/login`, `/api/auth/me`, `/api/auth/logout`) if `SMOKE_EMAIL` and `SMOKE_PASSWORD` are configured.
+   - **Authenticated Session Checks**: Production pipeline executes full login, me, and logout verification using credentials configured in GitHub Environment `demo`:
+     - Environment Variable: `SMOKE_EMAIL = respondent1@example.test` (seeded respondent account, avoiding owner privilege)
+     - Environment Secret: `SMOKE_PASSWORD` (matches demo password from Secret Manager `s3ed50763-demo-password`)
+     - Verifies `POST /api/auth/login` (stores HTTP-only cookie `sid`), `GET /api/auth/me` (confirms user session), and `POST /api/auth/logout` (revokes session and clears cookie with HTTP 204).
 6. **Deployment Summary**: Writes commit SHA, digest, rollback flag, service URL, and smoke test status to `$GITHUB_STEP_SUMMARY`.
 
 ### 12.2 Release Procedure (End-to-End)
@@ -316,6 +319,14 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
 6. **Post-merge Release Evidence (to be attached upon first run on `main`)**:
    - Link to `Deploy demo` GitHub Actions workflow run on `main`.
    - Actions Step Summary artifact showing commit SHA, image digest, rollback: false, service URL, and passing smoke test.
+   - Smoke test step log output showing all checks passing including authenticated login/logout:
+     ```text
+     PASS /api/health (version: <commit_sha>)
+     PASS /api/ready
+     PASS /
+     PASS login and authenticated /api/auth/me
+     PASS logout
+     ```
    - `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output verifying running commit SHA matches release.
    - `gcloud run services describe s3ed50763` output showing new revision name and image digest.
    - Verified release tag `v0.1.2-lab5`.
@@ -334,7 +345,7 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
 3. **Via GitHub Actions Step Summary**:
    Check the `Deploy demo` workflow run on GitHub under Actions -> Job `deploy` -> Summary (`$GITHUB_STEP_SUMMARY`).
 4. **Via Web UI Footer**:
-   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`), providing visible visual confirmation across all pages that pipeline deployment succeeded. (This visible indicator is documented for Lab 5 demonstration and will be cleaned up/removed after the demo).
+   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`), providing visible visual confirmation across all pages that pipeline deployment succeeded without relying on hardcoded fallback strings. (This visible indicator is documented for Lab 5 demonstration and will be cleaned up/removed after the demo).
 
 ### 12.4 Rollback Procedure
 
