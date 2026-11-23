@@ -10,11 +10,11 @@ This document describes how the application is built, tested and run today, whic
 
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
-| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; no registry push yet | TODO — Issue: L5-07 deploy workflow |
+| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Done (Issue: #29, #31) |
 | Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
-| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); `deploy.yml` exists but the deploy pipeline is not yet wired to a real project | Done (Issue: #28); L5-06 WIF + merge gate documented (see §11); TODO — Issue: L5-07 deploy workflow |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Done (Issue: #28, #30, #31) |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -284,4 +284,59 @@ Deployment targets Google Cloud project `cpe-se-course-2026` in region `asia-sou
 ## 11. Workload Identity Federation and merge gate (L5-06 / #30)
 
 Full design, command pack, verification and demo procedure: **[wif-and-merge-gate.md](wif-and-merge-gate.md)**. Summary: one least-privilege deployer service account (`s3ed50763-deployer`, no JSON key — WIF only) is assumed by GitHub Actions through one workload identity pool and one OIDC provider for `token.actions.githubusercontent.com`, whose attribute mapping/exchange is restricted by an attribute condition to this repository (`Worapol360/cpe334-group-project`, recommended additionally to `refs/heads/main`). The deploy job needs `permissions: id-token: write` (already in `deploy.yml`) and only `roles/run.developer`, `roles/artifactregistry.writer` on the repo, `roles/iam.serviceAccountUser` on the runtime SA, plus `roles/iam.workloadIdentityUser` bound to the deploy job's single OIDC subject (`principal://.../subject/repo:Worapol360/cpe334-group-project:environment:demo`, because the `deploy` job runs with `environment: demo`) — no owner/editor, no Secret Manager or Cloud SQL roles for the deployer. The provider resource name and deployer SA email go into GitHub environment `demo` as variables `WIF_PROVIDER` / `WIF_SERVICE_ACCOUNT` (with `GCP_PROJECT_ID`, `GCP_REGION`) — identifiers, never keys. The merge gate is a GitHub ruleset `protect-main-and-staging` on `main` and `sprint1-staging`: pull request required, 1 approval, required status check `test-and-docker`, no force pushes, no deletion, empty bypass list; proven by the C-02 failing-test PR #39 (check `CI / test-and-docker (pull_request)` failed after 2m, Merge button blocked, PR closed without merging — evidence kept). WIF itself is only proven by the first real `deploy.yml` run (L5-07).
+
+## 12. Automated Deployment Pipeline and Release Procedure (L5-07 / #31)
+
+### 12.1 Pipeline Architecture (`.github/workflows/deploy.yml`)
+
+The automated CD pipeline triggers on every push to `main` (and via manual `workflow_dispatch` for rollback):
+
+1. **Pre-flight CI Validation (`test`)**: Re-runs `.github/workflows/ci-docker.yml` (`test-and-docker` required check). If tests fail, the deployment is strictly skipped (`deploy` job does not execute).
+2. **Keyless Cloud Authentication**: Authenticates to Google Cloud using Workload Identity Federation (`google-github-actions/auth@v3`) using `vars.WIF_PROVIDER` and `vars.WIF_SERVICE_ACCOUNT` from GitHub environment `demo`. No service account keys are stored or used.
+3. **Container Build & Registry Push**: Builds the root multi-stage Dockerfile and pushes it to Artifact Registry tagged with the full 40-character commit SHA (`$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$SERVICE_NAME:$IMAGE_TAG`).
+4. **Digest Pinning & Database Migration**: Invokes `deploy/release.sh`, which resolves the image to its immutable `@sha256:...` digest, executes the Cloud Run migration job (`s3ed50763-migrate`) with `--wait`, and updates the Cloud Run service (`s3ed50763`) with `--image="$DIGEST_IMAGE"` and `--update-env-vars="APP_VERSION=$IMAGE_TAG"`.
+5. **Post-Deployment Smoke Test**: Runs `deploy/smoke_test.py` against `$SERVICE_URL`, verifying:
+   - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}`
+   - `GET /api/ready` -> HTTP 200 `{"status":"ready","db":"connected"}`
+   - `GET /` -> HTTP 200 HTML (`<html...`)
+6. **Deployment Summary**: Writes commit SHA, digest, rollback flag, service URL, and smoke test status to `$GITHUB_STEP_SUMMARY`.
+
+### 12.2 Release Procedure (End-to-End)
+
+1. Feature development occurs on dedicated feature branches (`feature/issue-<num>-*`).
+2. Feature PR is opened into `sprint1-staging`. Requires 1 approval from a teammate and a passing `test-and-docker` status check.
+3. Once validated on `sprint1-staging`, a Release PR is opened from `sprint1-staging` into `main`.
+4. Merging the Release PR into `main` automatically triggers `deploy.yml`.
+5. A git tag is created and pushed for the release:
+   ```sh
+   git tag -a v0.1.2-lab5 -m "Release v0.1.2-lab5: automated WIF pipeline release"
+   git push origin v0.1.2-lab5
+   ```
+
+### 12.3 How to Find the Running Commit
+
+1. **Via Public API (`/api/health`)**:
+   ```sh
+   curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
+   # Returns: {"status":"ok","version":"<commit_sha>"}
+   ```
+2. **Via Cloud Run Metadata**:
+   ```sh
+   gcloud run services describe s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --format="table(status.latestReadyRevisionName, spec.template.spec.containers[0].image, spec.template.spec.containers[0].env)"
+   ```
+3. **Via GitHub Actions Step Summary**:
+   Check the `Deploy demo` workflow run on GitHub under Actions -> Job `deploy` -> Summary (`$GITHUB_STEP_SUMMARY`).
+
+### 12.4 Rollback Procedure
+
+In the event of a broken production release:
+1. Open GitHub Actions -> **Deploy demo** workflow.
+2. Click **Run workflow**, select branch `main`, and enter `image_tag`: the full 40-character commit SHA of a previous known-good deployment.
+3. The workflow detects rollback mode (`inputs.image_tag != ''`):
+   - Unit and E2E tests are skipped.
+   - Container image build is skipped (the existing image in Artifact Registry is reused).
+   - Database migrations are skipped.
+   - The Cloud Run service is updated to the target digest image and traffic shifted to 100%.
+   - The smoke test runs against the restored revision.
+
 

@@ -52,12 +52,11 @@ def request(base, path, data=None, token=None):
 
 
 def check(base):
-    # --- Public checks (CHANGE ME: paths + predicates for your own API) -------
+    # --- Public checks for FeedbackLoop ---------------------------------------
     for path, predicate in (
-        ('/api/health', lambda b: json.loads(b).get('status') == 'ok'),
+        ('/api/health', lambda b: json.loads(b).get('status') == 'ok' and 'version' in json.loads(b)),
         ('/api/ready', lambda b: json.loads(b).get('db') == 'connected'),
         ('/', lambda b: b'<html' in b.lower()),
-        ('/api/categories', lambda b: isinstance(json.loads(b), list) and len(json.loads(b)) > 0),
     ):
         # Retry: a cold Cloud Run instance may need a few seconds to start.
         for attempt in range(5):

@@ -33,6 +33,14 @@ function HomeRedirect() {
   return <Navigate to={homeFor(user.role)} replace />;
 }
 
+function Footer() {
+  return (
+    <footer data-testid="app-footer" style={{ textAlign: 'center', padding: '1.5rem', color: '#6b7280', fontSize: '0.85rem' }}>
+      FeedbackLoop • Lab 5 Release (v0.1.2-lab5)
+    </footer>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -98,6 +106,7 @@ export default function App() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="*" element={<HomeRedirect />} />
         </Routes>
+        <Footer />
       </BrowserRouter>
     </AuthProvider>
   );
