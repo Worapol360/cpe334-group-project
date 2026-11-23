@@ -14,7 +14,7 @@ This document describes how the application is built, tested and run today, whic
 | Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
-| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Done (Issue: #28, #30, #31) |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Implemented — pending first run on main (Issue: #28, #30, #31) |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -295,10 +295,11 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
 2. **Keyless Cloud Authentication**: Authenticates to Google Cloud using Workload Identity Federation (`google-github-actions/auth@v3`) using `vars.WIF_PROVIDER` and `vars.WIF_SERVICE_ACCOUNT` from GitHub environment `demo`. No service account keys are stored or used.
 3. **Container Build & Registry Push**: Builds the root multi-stage Dockerfile and pushes it to Artifact Registry tagged with the full 40-character commit SHA (`$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$SERVICE_NAME:$IMAGE_TAG`).
 4. **Digest Pinning & Database Migration**: Invokes `deploy/release.sh`, which resolves the image to its immutable `@sha256:...` digest, executes the Cloud Run migration job (`s3ed50763-migrate`) with `--wait`, and updates the Cloud Run service (`s3ed50763`) with `--image="$DIGEST_IMAGE"` and `--update-env-vars="APP_VERSION=$IMAGE_TAG"`.
-5. **Post-Deployment Smoke Test**: Runs `deploy/smoke_test.py` against `$SERVICE_URL`, verifying:
-   - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}`
+5. **Post-Deployment Smoke Test**: Runs `deploy/smoke_test.py` against `$SERVICE_URL` and asserts `$IMAGE_TAG`:
+   - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}` (asserts `version == IMAGE_TAG`)
    - `GET /api/ready` -> HTTP 200 `{"status":"ready","db":"connected"}`
    - `GET /` -> HTTP 200 HTML (`<html...`)
+   - Optional cookie-based authenticated checks (`/api/auth/login`, `/api/auth/me`, `/api/auth/logout`) if `SMOKE_EMAIL` and `SMOKE_PASSWORD` are configured.
 6. **Deployment Summary**: Writes commit SHA, digest, rollback flag, service URL, and smoke test status to `$GITHUB_STEP_SUMMARY`.
 
 ### 12.2 Release Procedure (End-to-End)
@@ -312,13 +313,19 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    git tag -a v0.1.2-lab5 -m "Release v0.1.2-lab5: automated WIF pipeline release"
    git push origin v0.1.2-lab5
    ```
+6. **Post-merge Release Evidence (to be attached upon first run on `main`)**:
+   - Link to `Deploy demo` GitHub Actions workflow run on `main`.
+   - Actions Step Summary artifact showing commit SHA, image digest, rollback: false, service URL, and passing smoke test.
+   - `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output verifying running commit SHA matches release.
+   - `gcloud run services describe s3ed50763` output showing new revision name and image digest.
+   - Verified release tag `v0.1.2-lab5`.
 
 ### 12.3 How to Find the Running Commit
 
 1. **Via Public API (`/api/health`)**:
    ```sh
    curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
-   # Returns: {"status":"ok","version":"<commit_sha>"}
+   # Expected output on production release: {"status":"ok","version":"<commit_sha>"}
    ```
 2. **Via Cloud Run Metadata**:
    ```sh
@@ -326,6 +333,8 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    ```
 3. **Via GitHub Actions Step Summary**:
    Check the `Deploy demo` workflow run on GitHub under Actions -> Job `deploy` -> Summary (`$GITHUB_STEP_SUMMARY`).
+4. **Via Web UI Footer**:
+   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`), providing visible visual confirmation across all pages that pipeline deployment succeeded. (This visible indicator is documented for Lab 5 demonstration and will be cleaned up/removed after the demo).
 
 ### 12.4 Rollback Procedure
 

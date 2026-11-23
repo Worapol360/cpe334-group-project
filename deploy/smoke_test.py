@@ -2,19 +2,19 @@
 
 WHAT THIS SCRIPT DOES
     Called by .github/workflows/deploy.yml after a deployment:
-        python3 deploy/smoke_test.py SERVICE_URL
+        python3 deploy/smoke_test.py SERVICE_URL [EXPECTED_VERSION]
     It checks the live service and exits non-zero (failing the workflow) if any
     check fails. Each public check is retried up to 5 times, 3 seconds apart, to
     tolerate Cloud Run cold starts.
 
     Checks (in order)
-      1. GET /api/health      -> {"status": "ok"}
+      1. GET /api/health      -> {"status": "ok", "version": "<expected_version>"} (asserts matching version when given)
       2. GET /api/ready       -> {"db": "connected"}   (proves the DB works)
       3. GET /                -> HTML page (the built React app is served)
-      4. GET /api/categories  -> non-empty list (migration + seed worked)
-      5. OPTIONAL login test  -> login, /api/auth/me, logout. Runs only if BOTH
+      4. OPTIONAL login test  -> login, /api/auth/me, logout. Runs only if BOTH
          env vars SMOKE_EMAIL and SMOKE_PASSWORD are set (set both or neither).
-         The session is always logged out, even if a check fails.
+         Session is managed via HTTP-only cookie (sid); login returns user JSON;
+         logout returns 204. The session is always logged out, even if a check fails.
 
 IMPORTANT
     Uses only the Python standard library (no pip install needed).
@@ -22,13 +22,10 @@ IMPORTANT
 
 REFERENCES
     - urllib.request : https://docs.python.org/3/library/urllib.request.html
+    - http.cookiejar : https://docs.python.org/3/library/http.cookiejar.html
     - unittest.mock  : https://docs.python.org/3/library/unittest.mock.html
-
-CHANGE ME (groups using another tech stack):
-    - the endpoint paths and expected responses in check() below
-      (/api/health, /api/ready, /, /api/categories, /api/auth/*)
-    - the login/logout endpoints and the 'token' field of the login response
 """
+import http.cookiejar
 import json
 import os
 import sys
@@ -37,24 +34,36 @@ import urllib.error
 import urllib.request
 
 
-# --- HTTP helper --------------------------------------------------------------
+# --- HTTP helper with CookieJar for session support ---------------------------
 # Returns the response body (bytes). Raises on HTTP errors / timeouts.
-def request(base, path, data=None, token=None):
+cookie_jar = http.cookiejar.CookieJar()
+opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie_jar))
+
+
+def request(base, path, data=None):
     headers = {}
+    payload = None
     if data is not None:
         headers['Content-Type'] = 'application/json'
-    if token:
-        headers['Authorization'] = 'Bearer ' + token
-    req = urllib.request.Request(base + path, headers=headers,
-        data=json.dumps(data).encode() if data is not None else None)
-    with urllib.request.urlopen(req, timeout=30) as response:
+        payload = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(base + path, headers=headers, data=payload)
+    with opener.open(req, timeout=30) as response:
         return response.read()
 
 
-def check(base):
+def check(base, expected_version=None):
+    def health_ok(b):
+        data = json.loads(b)
+        if data.get('status') != 'ok':
+            return False
+        ver = data.get('version')
+        if expected_version:
+            return ver == expected_version
+        return bool(ver)
+
     # --- Public checks for FeedbackLoop ---------------------------------------
     for path, predicate in (
-        ('/api/health', lambda b: json.loads(b).get('status') == 'ok' and 'version' in json.loads(b)),
+        ('/api/health', health_ok),
         ('/api/ready', lambda b: json.loads(b).get('db') == 'connected'),
         ('/', lambda b: b'<html' in b.lower()),
     ):
@@ -68,7 +77,10 @@ def check(base):
                 if attempt == 4:
                     raise RuntimeError('Smoke check failed: ' + path) from None
                 time.sleep(3)
-        print('PASS ' + path)
+        if path == '/api/health' and expected_version:
+            print(f'PASS {path} (version: {expected_version})')
+        else:
+            print('PASS ' + path)
 
     # --- Optional login check (only when both credentials are provided) -------
     email, password = os.getenv('SMOKE_EMAIL'), os.getenv('SMOKE_PASSWORD')
@@ -77,23 +89,30 @@ def check(base):
     if not email:
         print('SKIP login: optional smoke credentials not configured')
         return
-    token = None
+
+    logged_in = False
     try:
-        login = json.loads(request(base, '/api/auth/login', {'email': email, 'password': password}))
-        token = login['token']
-        request(base, '/api/auth/me', token=token)
+        login_res = json.loads(request(base, '/api/auth/login', {'email': email, 'password': password}))
+        if 'user' not in login_res:
+            raise ValueError('Login response missing user')
+        logged_in = True
+
+        me_res = json.loads(request(base, '/api/auth/me'))
+        if 'user' not in me_res:
+            raise ValueError('/api/auth/me response missing user')
         print('PASS login and authenticated /api/auth/me')
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError):
         raise RuntimeError('Login smoke check failed') from None
     finally:
         # Always end the session, even when a check above failed.
-        if token:
-            request(base, '/api/auth/logout', data={}, token=token)
+        if logged_in:
+            request(base, '/api/auth/logout', data={})
             print('PASS logout')
 
 
 # --- Entry point ----------------------------------------------------------------
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        sys.exit('Usage: python3 deploy/smoke_test.py SERVICE_URL')
-    check(sys.argv[1].rstrip('/'))
+    if len(sys.argv) not in (2, 3):
+        sys.exit('Usage: python3 deploy/smoke_test.py SERVICE_URL [EXPECTED_VERSION]')
+    expected = sys.argv[2] if len(sys.argv) == 3 else os.getenv('EXPECTED_VERSION') or os.getenv('IMAGE_TAG')
+    check(sys.argv[1].rstrip('/'), expected_version=expected)

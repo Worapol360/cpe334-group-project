@@ -3,9 +3,9 @@
 Run (repo root):  python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
 CI runs it too (.github/workflows/ci-docker.yml).
 
-Covers: public checks pass + login skipped without credentials; a DB that is not
-ready fails even if HTTP answers; the session is logged out even if a check fails.
-CHANGE ME: if you change the endpoints in smoke_test.py, update `response()` below.
+Covers: public checks pass + login skipped without credentials; expected version
+matching and mismatch rejection; a DB that is not ready fails even if HTTP answers;
+successful login/me/logout flow; and session is logged out even if me fails.
 """
 import importlib.util
 from pathlib import Path
@@ -18,14 +18,14 @@ spec.loader.exec_module(smoke)
 
 
 class SmokeTests(unittest.TestCase):
-    def response(self, base, path, data=None, token=None):
+    def response(self, base, path, data=None):
         return {
             '/api/health': b'{"status":"ok","version":"dev"}',
             '/api/ready': b'{"db":"connected"}',
             '/': b'<html></html>',
-            '/api/auth/login': b'{"token":"test-session"}',
-            '/api/auth/me': b'{"id":1}',
-            '/api/auth/logout': b'{}',
+            '/api/auth/login': b'{"user":{"id":1,"email":"smoke@example.test","role":"respondent"}}',
+            '/api/auth/me': b'{"user":{"id":1,"email":"smoke@example.test","role":"respondent"}}',
+            '/api/auth/logout': b'',
         }[path]
 
     @patch.dict('os.environ', {}, clear=True)
@@ -33,6 +33,17 @@ class SmokeTests(unittest.TestCase):
         with patch.object(smoke, 'request', side_effect=self.response) as req:
             smoke.check('https://demo.test')
             self.assertEqual(req.call_count, 3)
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_version_match_passes(self):
+        with patch.object(smoke, 'request', side_effect=self.response):
+            smoke.check('https://demo.test', expected_version='dev')
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_version_mismatch_fails(self):
+        with patch.object(smoke, 'request', side_effect=self.response), patch.object(smoke.time, 'sleep'):
+            with self.assertRaisesRegex(RuntimeError, '/api/health'):
+                smoke.check('https://demo.test', expected_version='mismatched-commit-sha')
 
     @patch.dict('os.environ', {}, clear=True)
     def test_db_not_ready_fails_even_when_http_responds(self):
@@ -43,11 +54,17 @@ class SmokeTests(unittest.TestCase):
                 smoke.check('https://demo.test')
 
     @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke@example.test', 'SMOKE_PASSWORD': 'test-only'}, clear=True)
+    def test_login_flow_succeeds(self):
+        with patch.object(smoke, 'request', side_effect=self.response) as req:
+            smoke.check('https://demo.test')
+            self.assertEqual(req.call_count, 6)
+
+    @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke@example.test', 'SMOKE_PASSWORD': 'test-only'}, clear=True)
     def test_session_is_logged_out_even_if_me_fails(self):
-        def broken_me(base, path, data=None, token=None):
+        def broken_me(base, path, data=None):
             if path == '/api/auth/me':
                 raise ValueError('Broken response')
-            return self.response(base, path, data, token)
+            return self.response(base, path, data)
         with patch.object(smoke, 'request', side_effect=broken_me) as req:
             with self.assertRaisesRegex(RuntimeError, 'Login smoke'):
                 smoke.check('https://demo.test')

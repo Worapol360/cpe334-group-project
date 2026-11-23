@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, homeFor, useAuth } from './auth.jsx';
 import Login from './pages/Login.jsx';
@@ -34,9 +35,20 @@ function HomeRedirect() {
 }
 
 function Footer() {
+  const [version, setVersion] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.version) setVersion(data.version);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <footer data-testid="app-footer" style={{ textAlign: 'center', padding: '1.5rem', color: '#6b7280', fontSize: '0.85rem' }}>
-      FeedbackLoop • Lab 5 Release (v0.1.2-lab5)
+      FeedbackLoop • Lab 5 Release{version ? ` (${version})` : ' (v0.1.2-lab5)'}
     </footer>
   );
 }
