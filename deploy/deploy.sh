@@ -100,27 +100,25 @@ fi
 
 # ------------------------------------------------------------------------------
 # Resource names
-# ⚠️ The lab guide refers to these names (toktickit, toktickit-pg,
-#    toktickit-runner, ...) and deploy.yml / release.sh / teardown.sh use the
-#    same ones. Keep them unless the guide says otherwise.
-# CHANGE ME: rename only if your group uses its own naming (then rename it in
-#            deploy.yml, release.sh, teardown.sh and the tests too).
+# ⚠️ Resource names default to the course portal assigned prefix ($PREFIX).
+#    deploy.yml / release.sh / teardown.sh use the same prefix (s3ed50763).
 # ------------------------------------------------------------------------------
-REPO_NAME="toktickit"
-SQL_INSTANCE="toktickit-pg"
-DB_NAME="toktickit"
-DB_USER="toktickit"
-SERVICE_NAME="toktickit"
-MIGRATE_JOB_NAME="toktickit-migrate"
-SA_NAME="toktickit-runner"
+PREFIX="${PREFIX:-s3ed50763}"
+REPO_NAME="${REPO_NAME:-$PREFIX}"
+SQL_INSTANCE="${SQL_INSTANCE:-$PREFIX-pg}"
+DB_NAME="${DB_NAME:-$PREFIX}"
+DB_USER="${DB_USER:-$PREFIX}"
+SERVICE_NAME="${SERVICE_NAME:-$PREFIX}"
+MIGRATE_JOB_NAME="${MIGRATE_JOB_NAME:-$PREFIX-migrate}"
+SA_NAME="${SA_NAME:-$PREFIX-runner}"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 SQL_CONN_NAME="${PROJECT_ID}:${REGION}:${SQL_INSTANCE}"
 IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:latest"
 
 # Secret Manager secret names (values are never stored in this repo).
-SECRET_DB_URL="toktickit-database-url"
-SECRET_ADMIN_PASS="toktickit-admin-password"
-SECRET_DEMO_PASS="toktickit-demo-password"
+SECRET_DB_URL="${SECRET_DB_URL:-$PREFIX-database-url}"
+SECRET_ADMIN_PASS="${SECRET_ADMIN_PASS:-$PREFIX-admin-password}"
+SECRET_DEMO_PASS="${SECRET_DEMO_PASS:-$PREFIX-demo-password}"
 
 GENERATED_ADMIN_PASSWORD=""
 GENERATED_DEMO_PASSWORD=""
@@ -317,7 +315,7 @@ run_cmd gcloud builds submit \
 #        service, so a broken migration never reaches users.
 #     CHANGE ME: `--args` (prisma migrate deploy && npm run prisma:seed) is
 #        Prisma/npm specific — use your stack's migrate/seed command.
-#     deploy.yml / release.sh later re-run this same job (name: toktickit-migrate).
+#     deploy.yml / release.sh later re-run this same job (name: $MIGRATE_JOB_NAME).
 # ==============================================================================
 run_cmd gcloud run jobs deploy "$MIGRATE_JOB_NAME" \
   --image "$IMAGE_URI" \

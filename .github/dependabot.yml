@@ -1,6 +1,39 @@
+# ##############################################################################
+# Dependabot — Issue L5-04 / #28
+# ##############################################################################
+# Keeps CI dependencies fresh:
+#   - github-actions : the actions used in .github/workflows/*.yml (so pinned
+#     SHAs get bump PRs), and
+#   - npm            : one entry per package directory (server, client, e2e).
+# All PRs target sprint1-staging (the lab's integration branch), weekly, at
+# most 3 open PRs per entry.
+# ##############################################################################
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
+    target-branch: sprint1-staging
+
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    target-branch: sprint1-staging
+
+  - package-ecosystem: npm
+    directory: /client
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    target-branch: sprint1-staging
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    target-branch: sprint1-staging
