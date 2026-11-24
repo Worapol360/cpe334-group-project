@@ -11,7 +11,8 @@ Prove **R-04** / check **C-05**: application data (surveys, responses) and serve
 - the records created in Step 1 still exist with unchanged counts,
 - the owner opens the summary and sees the same response count,
 - the pre-existing session still works, **or** login works again if the session TTL expired (TTL expired is an accepted fallback, note the times),
-- after a redeploy, `GET /api/health` returns `version` equal to the new commit SHA.
+- after a redeploy, `GET /api/health` returns `version` equal to the new commit SHA,
+- **Step 2 only:** the image digest read before and after the restart is **identical** (restart changed only the revision, not the image).
 
 ## 2. Preconditions
 
@@ -44,12 +45,16 @@ Prove **R-04** / check **C-05**: application data (surveys, responses) and serve
 
 ![Figure 1. Owner summary before restart](images/figure-1-before-restart.png)
 
-Read-only commands:
+Read-only commands.
+
+**Terminal: PowerShell**
 
 ```powershell
 # Purpose: record the running version before the test
 curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
 ```
+
+**Terminal: PowerShell**
 
 ```powershell
 # Purpose: record the revision serving before the test
@@ -58,12 +63,16 @@ gcloud run services describe s3ed50763 --region=asia-southeast1 --project=cpe-se
 
 ## 4. Step 2 — Restart (new Cloud Run revision, same image)
 
-Force a fresh container **without changing the image** by updating a harmless env var (restart marker). Numbered command pack for a human (PowerShell):
+Force a fresh container **without changing the image** by updating a harmless env var (restart marker). Numbered command pack for a human:
+
+**Terminal: PowerShell**
 
 ```powershell
 # 1. Purpose: confirm the image digest currently deployed (baseline, read-only)
 gcloud run revisions describe s3ed50763-00003-6dt --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.template.spec.containers[0].image)"
 ```
+
+**Terminal: PowerShell**
 
 ```powershell
 # 2. Purpose: force a NEW revision from the same image via a harmless env var
@@ -71,15 +80,21 @@ gcloud run revisions describe s3ed50763-00003-6dt --region=asia-southeast1 --pro
 gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --update-env-vars="RESTART_MARKER=persistence-<YYYYMMDD-HHMM>"
 ```
 
+**Terminal: PowerShell**
+
 ```powershell
 # 3. Purpose: confirm the new revision is serving 100% of traffic (read-only)
 gcloud run services describe s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --format="table(status.latestReadyRevisionName, status.traffic.revisionName, status.traffic.percent, status.traffic.latestRevision)"
 ```
 
+**Terminal: PowerShell**
+
 ```powershell
 # 4. Purpose: list revisions (read-only) — keep the new revision name for evidence
 gcloud run revisions list --service=s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026
 ```
+
+**Terminal: PowerShell**
 
 ```powershell
 # 5. Purpose: verify the new revision runs the SAME image digest (read-only)
@@ -90,9 +105,19 @@ gcloud run revisions describe <new-revision-name> --region=asia-southeast1 --pro
 
 **Actual restart trigger used (Step 2 = PASS):**
 
-```powershell
+**Terminal: Cloud Shell (Bash)** — this is the variant that was actually run:
+
+```bash
 # [CHANGES SERVICE] Purpose: force a new revision from the same image via a restart marker env var
 gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --update-env-vars="PERSISTENCE_TEST_AT=$(date -u +%Y%m%dT%H%M%SZ)"
+```
+
+**Terminal: PowerShell** — equivalent, same meaning, if run from a Windows terminal:
+
+```powershell
+# [CHANGES SERVICE] Purpose: force a new revision from the same image via a restart marker env var
+$ts = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
+gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --update-env-vars="PERSISTENCE_TEST_AT=$ts"
 ```
 
 > **Note:** `PERSISTENCE_TEST_AT` is a harmless restart marker env var that forces a new revision. The application does not read it; it is not in `.env.example`; it remains set on the service.
@@ -106,10 +131,26 @@ gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-c
 1. `/api/health` still 200 → `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged SHA).
 2. Owner session on `owner1@example.test` still worked within the 60-minute TTL; the summary shows the same title, **survey ID 5**, **1 response**; `GET /api/surveys/5/summary` returned 200 after refresh (DevTools "200 fetch").
 3. New revision `s3ed50763-00004-ssd` serving 100% traffic, same image from 7a705e2.
+4. **Image digest comparison (Step 2 pass criterion):** the read-only command below returned the **identical** image digest for both revisions — **identical digest: restart changed only the revision, not the image** (evidence table below).
 
 **Figure 3. C-05 (R-04): Owner summary after restart, survey ID 5, 1 response; URL https://s3ed50763-4d7hbszvwq-as.a.run.app; revision s3ed50763-00004-ssd; commit 7a705e2**
 
 ![Figure 3. Owner summary after restart with DevTools Network 200 fetch](images/figure-3-after-restart-summary.png)
+
+**Image digest evidence (Step 2 pass criterion) — read-only, Terminal: Cloud Shell (Bash)** (run by a human in Cloud Shell):
+
+```bash
+# Purpose: read-only — read the image reference and digest for both revisions (no state change)
+gcloud run revisions describe s3ed50763-00003-6dt --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.containers[0].image, status.imageDigest)"
+gcloud run revisions describe s3ed50763-00004-ssd --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.containers[0].image, status.imageDigest)"
+```
+
+| Revision | Image digest | Result |
+|---|---|---|
+| `s3ed50763-00003-6dt` (before restart) | `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | baseline |
+| `s3ed50763-00004-ssd` (after restart) | `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | **identical** |
+
+**Conclusion:** identical digest: restart changed only the revision, not the image. Both revisions reference the image `asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3ed50763/s3ed50763@sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461`.
 
 ## 5. Step 3 — Redeploy through the pipeline
 
@@ -130,6 +171,8 @@ gcloud run services update s3ed50763 --region=asia-southeast1 --project=cpe-se-c
 
 **Verify after redeploy:** repeat the Step 2 verification (records exist, summary counts unchanged, session works or re-login), then:
 
+**Terminal: PowerShell**
+
 ```powershell
 # Purpose: version must equal the new commit SHA (read-only)
 curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
@@ -142,6 +185,8 @@ curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
 - **Option A — via the workflow [CHANGES SERVICE]:** Deploy demo → Run workflow → branch `main`, `image_tag` = full 40-char SHA of a previous known-good commit. Tests, build and migration are skipped; the service is pointed back at that image and the smoke test runs.
 - **Option B — route traffic to an earlier revision [CHANGES SERVICE]:**
 
+**Terminal: PowerShell**
+
 ```powershell
 # Purpose: send 100% of traffic to an earlier revision (read the name from revisions list first)
 gcloud run services update-traffic s3ed50763 --to-revisions=<earlier-revision>=100 --region=asia-southeast1 --project=cpe-se-course-2026
@@ -149,6 +194,8 @@ gcloud run services update-traffic s3ed50763 --to-revisions=<earlier-revision>=1
 
 - **Smoke check:** `/api/health` (read-only curl), owner login, summary counts unchanged.
 - **Roll forward [CHANGES SERVICE]:** re-run Deploy demo with the newer SHA, or:
+
+**Terminal: PowerShell**
 
 ```powershell
 # Purpose: send 100% of traffic back to the latest revision
@@ -166,6 +213,7 @@ Release under test: commit `7a705e28527f7d32b78a9fc0f867f23414bfff19`. Service `
 | Session works (or re-login works) | owner `owner1@example.test` logged in (password never recorded) | session still worked within the 60-minute TTL | PENDING | Step 2 = PASS | — |
 | `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged) | PENDING (must equal new SHA) | Step 2 = PASS; Step 3 = PENDING | Figure 5 (PENDING) |
 | New revision serving 100% traffic / same image digest | `s3ed50763-00003-6dt` | `s3ed50763-00004-ssd`, 100% traffic, same image from `7a705e2` | PENDING | Step 2 = PASS; Step 3 = PENDING | Figure 2 / 4 |
+| Image digest identical before/after restart (Step 2 pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — **identical digest: restart changed only the revision, not the image** | PENDING (new SHA expected) | Step 2 = PASS; Step 3 = PENDING | — |
 | Rollback + roll forward records intact (optional) | — | — | PENDING | not run (optional) | — |
 
 **Overall C-05 = PARTIAL (restart proven, redeploy pending).** The "After redeploy" column stays **PENDING**; Figures 4 and 5 will be added after the release PR.
@@ -184,12 +232,16 @@ Release under test: commit `7a705e28527f7d32b78a9fc0f867f23414bfff19`. Service `
 
 Target settings (as provisioned by `deploy/deploy.sh`): Cloud Run **min instances 0**, **max instances 3**; Cloud SQL tier **`db-f1-micro`** (smallest).
 
-Read-only checks:
+Read-only checks.
+
+**Terminal: PowerShell**
 
 ```powershell
 # Purpose: read min/max instances (read-only)
 gcloud run services describe s3ed50763 --region=asia-southeast1 --project=cpe-se-course-2026 --format="value(spec.template.spec.scaling.minInstanceCount, spec.template.spec.scaling.maxInstanceCount)"
 ```
+
+**Terminal: PowerShell**
 
 ```powershell
 # Purpose: read Cloud SQL tier and activation policy (read-only)
@@ -198,20 +250,34 @@ gcloud sql instances describe s3ed50763-pg --project=cpe-se-course-2026 --format
 
 Pause / resume Cloud SQL — **[CHANGES STATE] — both members must read this block before running either command:**
 
+**Terminal: PowerShell** — [CHANGES STATE]
+
 ```powershell
-# [CHANGES STATE] Purpose: pause Cloud SQL when idle (stops compute charges; data is NOT deleted)
+# [CHANGES STATE] Purpose: pause Cloud SQL when idle — stopping (activation policy NEVER) does NOT delete data; the persistent disk/storage is kept
 gcloud sql instances patch s3ed50763-pg --project=cpe-se-course-2026 --activation-policy=NEVER
 ```
 
+**Terminal: PowerShell** — [CHANGES STATE]
+
 ```powershell
-# [CHANGES STATE] Purpose: resume Cloud SQL (must run before any test or release)
+# [CHANGES STATE] Purpose: resume Cloud SQL — the instance MUST be resumed (activation policy ALWAYS) and confirmed running before every test and before every deploy/release (the migration job and the app need it)
 gcloud sql instances patch s3ed50763-pg --project=cpe-se-course-2026 --activation-policy=ALWAYS
+```
+
+Read-only check of the instance state — run it after resume and before every test and every deploy/release:
+
+**Terminal: PowerShell**
+
+```powershell
+# Purpose: read-only instance state check — expect settings.activationPolicy=ALWAYS and status=RUNNABLE before any test or deploy/release
+gcloud sql instances describe s3ed50763-pg --project=cpe-se-course-2026 --format="value(settings.activationPolicy, status)"
 ```
 
 **Warnings:**
 
-- The instance must be **RUNNING** (`activationPolicy = ALWAYS`) before **any** test or release — otherwise the app, migration job and smoke test cannot reach the database and will fail.
-- Stopping (`NEVER`) does **not** delete data; it only stops the instance. Deleting the instance would.
+- Stopping (`activationPolicy = NEVER`) does **not** delete data and does **not** delete storage: the instance is stopped and its persistent disk is kept. Only deleting the instance would remove them.
+- The instance MUST be resumed (`activationPolicy = ALWAYS`) and **confirmed running** with the read-only check above (`ALWAYS` / `RUNNABLE`) before **every** test and before **every** deploy/release — the migration job `s3ed50763-migrate` and the app both need the database; otherwise they fail.
+- Both pause and resume are **[CHANGES STATE]** commands: both members must read this block before either command is run.
 
 ## 9. Known limitations
 
