@@ -1,11 +1,11 @@
 # Lab 6 Part B — UAT Execution Record (partner release TD_QMS)
 
-Empty execution record. Every case, step and expected result below is copied from the partner team's files in `peer-cpe334-qms`:
+Every case, step and expected result below is copied from the partner team's files in `peer-cpe334-qms`:
 
 - Cases: `docs/labs/lab-06/uat-cases.md`
 - Handoff: `docs/labs/lab-06/handoff.md`
 
-Nothing is executed yet. Actual result, Evidence ID, Result and Defect link cells are deliberately blank.
+UAT-01 to UAT-04 have been executed and are filled in below. UAT-05 to UAT-08 are still an empty record: their Actual result, Evidence ID, Result and Defect link cells are deliberately blank.
 
 ## Header
 
@@ -13,14 +13,21 @@ Nothing is executed yet. Actual result, Evidence ID, Result and Defect link cell
 |---|---|
 | Partner team (system under test) | TD_QMS |
 | Partner repository URL | https://github.com/TeekhathatTT/CPE334-QMS |
-| Tested tag / commit | <FILL LATER> |
-| Deployed Cloud Run revision | <FILL LATER> |
+| Tested system | https://qms-1036193964355.asia-southeast1.run.app |
+| Tested tag / commit | QMS Release v1.1, commit e304cd9 (as shown by the app) |
+| Deployed Cloud Run revision | <CONFIRM> |
 | Environment URL | https://qms-1036193964355.asia-southeast1.run.app |
+| Round | 2026-11-26, 12:22-18:05 (per-case times: within this window; exact time <CONFIRM>) |
 | Our testers (UAT team) | Worapol Saeku, aranedlek |
-| Tester (executor) / Observer per case | Assigned at run time (see per-case tables) |
+| Tester (executor) / Observer per case | <CONFIRM> (per case; see the per-case tables) |
+| Accounts used (labels only) | `customer1`, `customer2`, `operator1`, `operator2`; separate browser windows per role |
 | Case source | `peer-cpe334-qms/docs/labs/lab-06/uat-cases.md` |
 | Handoff source | `peer-cpe334-qms/docs/labs/lab-06/handoff.md` |
 | `<BASE_URL>` used in cases | The environment URL above (their file also allows `http://localhost:5173` or a temporary tunnel URL, handoff §2) |
+
+**Environment note:** earlier the same day, before this round, the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it before 12:22. Evidence of that incident is listed separately in the "Pre-round incident" section below and is not part of the passing run.
+
+**Precondition for this round:** data left over from an earlier round existed (queue "General Inquiry Desk" already had Completed: 2), so ticket numbering in this round started at 3 and continued 4, 5, 6.
 
 > Note: their handoff §2 describes local/tunnel serving only and states that no cloud deployment exists; this run uses the Cloud Run environment URL recorded above.
 
@@ -53,6 +60,19 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 ---
 
+## Pre-round incident (before 12:22; not part of the passing run)
+
+Earlier the same day, before the round window above, the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it before 12:22. The evidence below records that incident only; it is **not** part of the UAT-01..04 run.
+
+| Evidence ID | What it shows |
+|---|---|
+| `EV-B-01_ENV_api-health-db-unavailable` | `/api/health` reported a database-unavailable error before the fix |
+| `EV-B-01_UAT-01_operator1-login-error` | Sign-in as `operator1` failed with the database-unavailable error before the fix |
+| `EV-B-01_UAT-01_login-500-network` | Login attempt returned a 500 / network error before the fix |
+| `EV-B-01_UAT-01_login-response-requestid` | The failing login response captured with its request id (no credentials recorded) |
+
+---
+
 ## UAT-01: Customer joins a queue and follows it to completion
 
 | Field | Value |
@@ -60,10 +80,10 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 | Case ID | UAT-01 |
 | Title | Customer joins a queue and follows it to completion |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1` and `operator1`; seeded queue "General Inquiry Desk". No other data is typed in. |
 
 **Preconditions (theirs):**
@@ -74,22 +94,22 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Window A: open `<BASE_URL>/login` and sign in as `customer1`. | Step 1: the browser goes to `/customer` and shows the tabs **Available Queues** and **My Active Tickets**. | | |
-| 2 | On the **Available Queues** tab, find "General Inquiry Desk" and select **Join Queue**. | Step 2: "General Inquiry Desk" is listed with availability "Open"; "Specialized Consultation" is not listed. While the request runs, the button shows "Joining queue..." and is disabled. Then a panel shows "You joined General Inquiry Desk.", the queue name, a positive whole number under "Queue number", and the status "Waiting". Record the number as **N**. | | |
-| 3 | Select **View details** in the success panel. Keep this detail page open in Window A. | Step 3: the page heading is "Queue entry". It shows queue number **N**, "General Inquiry Desk", "Status:" Waiting, the message "You are next", a "Joined:" time, and the line "Status updates automatically every 10 seconds." | | |
-| 4 | Window B: open `<BASE_URL>/login` and sign in as `operator1`. | *(no expected result given for step 4)* | | |
-| 5 | On "Assigned queues", select **Manage queue** for "General Inquiry Desk". | Step 5: the "Waiting Queue — FIFO (1)" section lists queue number **N** at position #1 with status Waiting and a "Customer ID:" value. No customer email or name is shown. | | |
-| 6 | Select **Call Next**. | Step 6: the button shows "Calling next..." while pending. Then the banner shows "Called queue number N." Entry **N** moves to "Active Service (1)" with status Called; **Start Service** is enabled and **Complete Service** is disabled. | | |
-| 7 | Window A: wait up to 15 seconds without reloading, then record the status. | Step 7: without a page reload, the customer page shows status Called, the message "Please go to the service desk.", and a "Called:" time. | | |
-| 8 | Window B: select **Start Service** on the entry in "Active Service". | Step 8: the banner shows "Started service for queue number N." The entry shows status In service; **Start Service** is disabled and **Complete Service** is enabled. | | |
-| 9 | Window A: wait up to 15 seconds, then record the status. | Step 9: the customer page shows status In service, the message "Your service is in progress.", and a "Service started:" time. | | |
-| 10 | Window B: select **Complete Service** on the same entry. | Step 10: the banner shows "Completed service for queue number N." Entry **N** appears under "Completed (…)" with status Completed, and "Active Service (0)" shows "No entries are currently called or in service." | | |
-| 11 | Window A: wait up to 15 seconds, then record the status. | Step 11: the customer page shows status Completed, the message "Service completed.", a "Completed:" time, and the line "This entry is complete and no longer updates." | | |
+| 1 | Window A: open `<BASE_URL>/login` and sign in as `customer1`. | Step 1: the browser goes to `/customer` and shows the tabs **Available Queues** and **My Active Tickets**. | Step 1: not recorded | |
+| 2 | On the **Available Queues** tab, find "General Inquiry Desk" and select **Join Queue**. | Step 2: "General Inquiry Desk" is listed with availability "Open"; "Specialized Consultation" is not listed. While the request runs, the button shows "Joining queue..." and is disabled. Then a panel shows "You joined General Inquiry Desk.", the queue name, a positive whole number under "Queue number", and the status "Waiting". Record the number as **N**. | `customer1` joined the queue "General Inquiry Desk" and received number 3 with status Waiting. | EV-B-01_UAT-01_customer-joined |
+| 3 | Select **View details** in the success panel. Keep this detail page open in Window A. | Step 3: the page heading is "Queue entry". It shows queue number **N**, "General Inquiry Desk", "Status:" Waiting, the message "You are next", a "Joined:" time, and the line "Status updates automatically every 10 seconds." | | EV-B-01_UAT-01_customer-detail-waiting |
+| 4 | Window B: open `<BASE_URL>/login` and sign in as `operator1`. | *(no expected result given for step 4)* | Step 4: not recorded | |
+| 5 | On "Assigned queues", select **Manage queue** for "General Inquiry Desk". | Step 5: the "Waiting Queue — FIFO (1)" section lists queue number **N** at position #1 with status Waiting and a "Customer ID:" value. No customer email or name is shown. | `operator1` saw the ticket with a Customer ID only, no customer name or email. | |
+| 6 | Select **Call Next**. | Step 6: the button shows "Calling next..." while pending. Then the banner shows "Called queue number N." Entry **N** moves to "Active Service (1)" with status Called; **Start Service** is enabled and **Complete Service** is disabled. | After Call Next the status became Called. | EV-B-01_UAT-01_operator-called |
+| 7 | Window A: wait up to 15 seconds without reloading, then record the status. | Step 7: without a page reload, the customer page shows status Called, the message "Please go to the service desk.", and a "Called:" time. | `customer1`'s view updated to Called with a message to go to the service point. | |
+| 8 | Window B: select **Start Service** on the entry in "Active Service". | Step 8: the banner shows "Started service for queue number N." The entry shows status In service; **Start Service** is disabled and **Complete Service** is enabled. | Start Service changed the entry to In service. | |
+| 9 | Window A: wait up to 15 seconds, then record the status. | Step 9: the customer page shows status In service, the message "Your service is in progress.", and a "Service started:" time. | | EV-B-01_UAT-01_customer-in-service |
+| 10 | Window B: select **Complete Service** on the same entry. | Step 10: the banner shows "Completed service for queue number N." Entry **N** appears under "Completed (…)" with status Completed, and "Active Service (0)" shows "No entries are currently called or in service." | Complete Service changed the entry to Completed. | EV-B-01_UAT-01_operator-completed |
+| 11 | Window A: wait up to 15 seconds, then record the status. | Step 11: the customer page shows status Completed, the message "Service completed.", a "Completed:" time, and the line "This entry is complete and no longer updates." | All four timestamps were shown and the page said the entry is finished and no longer updates. | EV-B-01_UAT-01_customer-completed |
 | — (all steps) | — | At no step does any page show a stack trace, SQL text or another customer's data. | | |
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
@@ -101,10 +121,10 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 | Case ID | UAT-02 |
 | Title | Duplicate active join in the same queue is refused |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `customer1`; seeded queue "General Inquiry Desk". |
 
 **Preconditions (theirs):**
@@ -114,16 +134,16 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Sign in as `customer1`. | *(no expected result given for step 1)* | | |
-| 2 | On **Available Queues**, select **Join Queue** on "General Inquiry Desk". Record the queue number as **N**. | Step 2: the panel shows "You joined General Inquiry Desk.", queue number **N** and status Waiting. | | |
-| 3 | Select **Join Queue** on "General Inquiry Desk" a second time. | Step 3: an error message shows "You already have an active entry in this queue." The **Join Queue** button is enabled again after the request finishes. No new queue number is shown. | | |
-| 4 | Open the **My Active Tickets** tab. | Step 4: exactly one ticket for "General Inquiry Desk" has status Waiting, and it has queue number **N**. (Completed tickets from earlier runs may also be listed; they do not count.) | | |
+| 1 | Sign in as `customer1`. | *(no expected result given for step 1)* | Step 1: not recorded | |
+| 2 | On **Available Queues**, select **Join Queue** on "General Inquiry Desk". Record the queue number as **N**. | Step 2: the panel shows "You joined General Inquiry Desk.", queue number **N** and status Waiting. | `customer1` already had one active ticket in "General Inquiry Desk" — number 4, status Waiting — before the second join press. | |
+| 3 | Select **Join Queue** on "General Inquiry Desk" a second time. | Step 3: an error message shows "You already have an active entry in this queue." The **Join Queue** button is enabled again after the request finishes. No new queue number is shown. | Pressing Join Queue again while an active ticket existed was refused with a message that an active entry already exists in this queue. | EV-B-01_UAT-02_duplicate-join-refused |
+| 4 | Open the **My Active Tickets** tab. | Step 4: exactly one ticket for "General Inquiry Desk" has status Waiting, and it has queue number **N**. (Completed tickets from earlier runs may also be listed; they do not count.) | The My Active Tickets tab showed exactly one active ticket, number 4, with status Waiting. | EV-B-01_UAT-02_my-active-tickets |
 
 **Clean-up (theirs):** ask `operator1` to call, start and complete ticket **N** (as in UAT-01, steps 5–10), so the next tester starts from an empty queue.
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
@@ -135,10 +155,10 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 | Case ID | UAT-03 |
 | Title | A closed queue cannot be joined |
 | Category (Interface, from their file) | UI (steps 1–3); API from the browser developer console (steps 4–6, optional) |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `customer1`; the seeded queue id `bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`. |
 
 **Preconditions (theirs):**
@@ -148,18 +168,18 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Sign in as `customer1`. | *(no expected result given for step 1)* | | |
-| 2 | Look at every queue card on **Available Queues**. | Step 2: "General Inquiry Desk" is listed; "Specialized Consultation" is not listed anywhere on the page. | | |
-| 3 | Open **My Active Tickets** and note how many tickets are listed. | *(no expected result given for step 3)* | | |
-| 4 | (Optional, API) In the same tab, open the developer tools console and run: `const csrf = decodeURIComponent(document.cookie.split('; ').find(c => c.startsWith('qms_csrf=')).split('=')[1]);`<br>`const r = await fetch('/api/queues/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/entries', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });`<br>`console.log(r.status, await r.json());` | *(no expected result given for step 4; the result is checked in step 5)* | | |
-| 5 | (Optional, API) Note the status and body printed. | Step 5: the console prints `409` and a body whose `error.code` is `QUEUE_NOT_AVAILABLE`, with a `message` and a `requestId`. No `data` field and no internal details (stack trace, SQL) are returned. | | |
-| 6 | (Optional) Reload the page and open **My Active Tickets** again. | Step 6: the number of tickets is the same as in step 3; there is no ticket for "Specialized Consultation". | | |
+| 1 | Sign in as `customer1`. | *(no expected result given for step 1)* | Step 1: not recorded | |
+| 2 | Look at every queue card on **Available Queues**. | Step 2: "General Inquiry Desk" is listed; "Specialized Consultation" is not listed anywhere on the page. | On `customer1`'s Available Queues tab only "General Inquiry Desk" (Open) was listed; the closed queue "Specialized Consultation" was not shown. | EV-B-01_UAT-03_available-queues-closed-hidden |
+| 3 | Open **My Active Tickets** and note how many tickets are listed. | *(no expected result given for step 3)* | Step 3: not recorded | |
+| 4 | (Optional, API) In the same tab, open the developer tools console and run: `const csrf = decodeURIComponent(document.cookie.split('; ').find(c => c.startsWith('qms_csrf=')).split('=')[1]);`<br>`const r = await fetch('/api/queues/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/entries', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });`<br>`console.log(r.status, await r.json());` | *(no expected result given for step 4; the result is checked in step 5)* | Step 4: not recorded | |
+| 5 | (Optional, API) Note the status and body printed. | Step 5: the console prints `409` and a body whose `error.code` is `QUEUE_NOT_AVAILABLE`, with a `message` and a `requestId`. No `data` field and no internal details (stack trace, SQL) are returned. | Step 5: not recorded | |
+| 6 | (Optional) Reload the page and open **My Active Tickets** again. | Step 6: the number of tickets is the same as in step 3; there is no ticket for "Specialized Consultation". | Step 6: not recorded | |
 
 **Note (theirs):** The UI cannot reach the closed-queue message ("This queue is not available right now.") from the browser alone, because a closed queue is never listed. That message appears only if a queue closes while the customer has the list open, and Sprint 1 has no screen for closing a queue.
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
@@ -171,10 +191,10 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 | Case ID | UAT-04 |
 | Title | First in, first out, and Call Next on an empty queue |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1`, `customer2`, `operator1`; seeded queue "General Inquiry Desk". |
 
 **Preconditions (theirs):**
@@ -184,18 +204,18 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Window A: sign in as `customer1` and join "General Inquiry Desk". Record the number as **N1**. | Steps 1–2: **N1** and **N2** are positive whole numbers and **N2** is greater than **N1**. (If no one else joined in between, **N2** is **N1** + 1.) | | |
-| 2 | Window B: sign in as `customer2` and join "General Inquiry Desk". Record the number as **N2**. | *(covered by the "Steps 1–2" expected result above)* | | |
-| 3 | Window C: sign in as `operator1`, select **Manage queue** for "General Inquiry Desk", and read the "Waiting Queue — FIFO" section. | Step 3: "Waiting Queue — FIFO (2)" lists **N1** at position #1 and **N2** at position #2. The "Customer ID:" values differ between the two rows. | | |
-| 4 | Window C: select **Call Next**. | Step 4: the banner shows "Called queue number N1." (not N2). **N2** is still listed as Waiting at position #1. | | |
-| 5 | Window C: select **Start Service**, then **Complete Service**, on the entry in "Active Service". | *(no expected result given for step 5)* | | |
-| 6 | Window C: select **Call Next**, then **Start Service** and **Complete Service** on the new entry. | Step 6: the banner shows "Called queue number N2." | | |
-| 7 | Window C: note the counts on the page, then select **Call Next** once more. | Step 7: the banner shows "No waiting entries to call right now." The "Waiting", "Active" and "Completed" counts at the top of the page are the same as before the click, and **N1** and **N2** are still listed under "Completed (…)" with status Completed. | | |
+| 1 | Window A: sign in as `customer1` and join "General Inquiry Desk". Record the number as **N1**. | Steps 1–2: **N1** and **N2** are positive whole numbers and **N2** is greater than **N1**. (If no one else joined in between, **N2** is **N1** + 1.) | `customer1` joined and received number 4. | |
+| 2 | Window B: sign in as `customer2` and join "General Inquiry Desk". Record the number as **N2**. | *(covered by the "Steps 1–2" expected result above)* | `customer2` joined and received number 5. | EV-B-01_UAT-04_customer2-joined |
+| 3 | Window C: sign in as `operator1`, select **Manage queue** for "General Inquiry Desk", and read the "Waiting Queue — FIFO" section. | Step 3: "Waiting Queue — FIFO (2)" lists **N1** at position #1 and **N2** at position #2. The "Customer ID:" values differ between the two rows. | `operator1`'s Waiting Queue (FIFO) listed number 4 at position 1 and number 5 at position 2. | EV-B-01_UAT-04_operator-fifo-list |
+| 4 | Window C: select **Call Next**. | Step 4: the banner shows "Called queue number N1." (not N2). **N2** is still listed as Waiting at position #1. | Call Next called number 4 before number 5. | EV-B-01_UAT-04_call-next-first |
+| 5 | Window C: select **Start Service**, then **Complete Service**, on the entry in "Active Service". | *(no expected result given for step 5)* | The waiting list was cleared before the next Call Next. | |
+| 6 | Window C: select **Call Next**, then **Start Service** and **Complete Service** on the new entry. | Step 6: the banner shows "Called queue number N2." | Call Next then called number 5, after number 4. | |
+| 7 | Window C: note the counts on the page, then select **Call Next** once more. | Step 7: the banner shows "No waiting entries to call right now." The "Waiting", "Active" and "Completed" counts at the top of the page are the same as before the click, and **N1** and **N2** are still listed under "Completed (…)" with status Completed. | Pressing Call Next again showed a message that there is nothing waiting to be called. | EV-B-01_UAT-04_call-next-empty |
 | — (after step 7) | Window B (`customer2`) checks the status of ticket **N2**. | Window B (`customer2`) shows status Completed for ticket **N2** after a refresh. | | |
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
