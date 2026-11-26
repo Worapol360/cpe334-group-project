@@ -15,19 +15,19 @@ UAT-01 to UAT-08 have been executed and are filled in below; UAT-07 Parts 2 and 
 | Partner repository URL | https://github.com/TeekhathatTT/CPE334-QMS |
 | Tested system | https://qms-1036193964355.asia-southeast1.run.app |
 | Tested tag / commit | QMS Release v1.1, commit e304cd9 (as shown by the app) |
-| Deployed Cloud Run revision | <CONFIRM> |
+| Deployed Cloud Run revision | not recorded |
 | Environment URL | https://qms-1036193964355.asia-southeast1.run.app |
-| Round | 2026-11-26, 12:22-18:05 (per-case times: within this window; exact time <CONFIRM>) |
+| Round | 2026-11-26, 12:22-18:05 (per-case times: within this window; exact time not recorded) |
 | Our testers (UAT team) | Worapol Saeku, aranedlek |
-| Tester (executor) / Observer per case | <CONFIRM> (per case; see the per-case tables) |
+| Tester (executor) / Observer per case | not recorded (per case; see the per-case tables) |
 | Accounts used (labels only) | `customer1`, `customer2`, `operator1`, `operator2`; separate browser windows per role |
 | Case source | `peer-cpe334-qms/docs/labs/lab-06/uat-cases.md` |
 | Handoff source | `peer-cpe334-qms/docs/labs/lab-06/handoff.md` |
 | `<BASE_URL>` used in cases | The environment URL above (their file also allows `http://localhost:5173` or a temporary tunnel URL, handoff §2) |
 
-**Environment note:** earlier the same day, before this round, the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it before 12:22. Evidence of that incident is listed separately in the "Pre-round incident" section below and is not part of the passing run.
+**Environment note:** on 2026-11-24 (evidence timestamps 2026-11-24 21:52 and 21:54) the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it on 2026-11-25, before the main test run on 2026-11-26 starting at 12:22. Evidence of that incident is listed separately in the "Pre-round incident" section below and is not part of the passing run.
 
-**Precondition for this round:** data left over from an earlier round existed (queue "General Inquiry Desk" already had Completed: 2), so ticket numbering in this round started at 3 and continued 4, 5, 6.
+**Precondition for this round:** data left over from an earlier round existed (queue "General Inquiry Desk" already showed Completed: 3 before the run). Numbers recorded in this round: UAT-04 queued and called 4, then 5; UAT-02's active ticket 4; UAT-07's rejoined ticket 6. Exact execution order of the cases inside the window: not recorded.
 
 > Note: their handoff §2 describes local/tunnel serving only and states that no cloud deployment exists; this run uses the Cloud Run environment URL recorded above.
 
@@ -60,9 +60,9 @@ From handoff.md §3 "Avoiding interference" and the case preconditions:
 
 ---
 
-## Pre-round incident (before 12:22; not part of the passing run)
+## Pre-round incident (observed 2026-11-24, fixed 2026-11-25; not part of the passing run)
 
-Earlier the same day, before the round window above, the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it before 12:22. The evidence below records that incident only; it is **not** part of the UAT-01..04 run.
+On 2026-11-24 (evidence timestamps 2026-11-24 21:52 and 21:54), before the main test run, the partner's deployment returned a database-unavailable error on login and on `/api/health`. The partner fixed it on 2026-11-25, before the run on 2026-11-26 starting at 12:22. The evidence below records that incident only; it is **not** part of the UAT-01..08 run.
 
 | Evidence ID | What it shows |
 |---|---|
@@ -80,9 +80,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-01 |
 | Title | Customer joins a queue and follows it to completion |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1` and `operator1`; seeded queue "General Inquiry Desk". No other data is typed in. |
 
@@ -121,9 +121,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-02 |
 | Title | Duplicate active join in the same queue is refused |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `customer1`; seeded queue "General Inquiry Desk". |
 
@@ -155,9 +155,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-03 |
 | Title | A closed queue cannot be joined |
 | Category (Interface, from their file) | UI (steps 1–3); API from the browser developer console (steps 4–6, optional) |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `customer1`; the seeded queue id `bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`. |
 
@@ -191,9 +191,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-04 |
 | Title | First in, first out, and Call Next on an empty queue |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1`, `customer2`, `operator1`; seeded queue "General Inquiry Desk". |
 
@@ -227,9 +227,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-05 |
 | Title | A customer cannot use operator screens or another customer's ticket |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts; the address of one of `customer1`'s ticket detail pages; the seeded queue id `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` ("General Inquiry Desk"). |
 
@@ -260,9 +260,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-06 |
 | Title | An operator not assigned to the queue cannot work it |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `operator2`; seeded queue id `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`. |
 
@@ -292,9 +292,9 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-07 |
 | Title | Data and history survive a refresh and a new sign-in; a completed ticket can be followed by a new one |
 | Category (Interface, from their file) | UI (tester); terminal on the owner's machine (owner, Parts 2 and 3) |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1`, `operator1`. |
 
@@ -363,13 +363,13 @@ The data survives this restart because `docker-compose.yml` stores PostgreSQL's 
 | Case ID | UAT-08 |
 | Title | Sign-in is refused for a wrong password, and sign-out ends the session |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | <CONFIRM> |
-| Observer | <CONFIRM> |
-| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tester (executor) | not recorded |
+| Observer | not recorded |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time not recorded. Two evidence files for this case were captured earlier, on 2026-11-24 (see the capture-date note below) |
 | Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | The sign-in name of `customer1` with an obviously wrong password (value not recorded in this document); an obviously fake sign-in name, for example `nobody-uat` at a fake domain such as `example.invalid` (written as name@domain). |
 
-Observed as part of this case's environment check: the app was reachable on Cloud Run and showed "QMS - Release v1.1" (EV-B-01_UAT-08_cloud-run-live).
+**Evidence capture dates (this case):** `EV-B-01_UAT-08_empty-fields-validation.png` (2026-11-24 22:03) and `EV-B-01_UAT-08_unauth-redirect.png` (2026-11-24 22:08) were captured on 2026-11-24, before the 2026-11-25 fix and the 2026-11-26 main run, so commit e304cd9 is **not claimed** for those two pre-fix captures. `EV-B-01_UAT-08_cloud-run-live.png` was captured on 2026-11-26 18:05, showing "QMS · Release v1.1".
 
 **Preconditions (theirs):** the tester is signed out.
 
