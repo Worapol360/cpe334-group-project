@@ -4,7 +4,7 @@ Findings raised by our UAT team against the partner release. One row per finding
 
 | Finding ID | Their case ID | Tested version | Preconditions/data | Steps to reproduce | Expected | Actual | Severity (Critical/Major/Minor) + user-impact reason | Defect vs enhancement | Evidence ID | Date reported | Channel | Their disposition | Retest result |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | | | | | |
-| | | | | | | | | | | | | | |
+| UATF-01 | n/a — environment incident observed before the UAT-01 run | Deployment before the fix <CONFIRM>; round re-tested on QMS Release v1.1, commit e304cd9 | Partner's Cloud Run deployment; login and `/api/health` | Earlier on 2026-11-26, before the 12:22 run: open `/login` and attempt to sign in, and request `/api/health` | Sign-in succeeds and `/api/health` reports a healthy service | Both returned a database-unavailable error (HTTP 500 on login) | <CONFIRM> | Type: environment incident (not a product-logic defect) | EV-B-01_ENV_api-health-db-unavailable, EV-B-01_UAT-01_operator1-login-error, EV-B-01_UAT-01_login-500-network, EV-B-01_UAT-01_login-response-requestid | <CONFIRM> | <CONFIRM> | <CONFIRM> | Fixed by the partner before the 12:22 run; the full round was then executed on e304cd9 |
+| UATF-02 | UAT-07 (Parts 2 and 3) | QMS Release v1.1, commit e304cd9 | Release deployed on Cloud Run; testers have no access to restart the service or the database container | Run UAT-07 Parts 2 and 3 against the Cloud Run deployment | The case's restart steps can be executed as written | Parts 2 and 3 were not executed: the case text assumes a local server/container run while the release under test is the Cloud Run deployment | Minor (documentation/test-design; no product behavior failed) | Handoff gap (documentation / test design) | — (BLOCKED steps, nothing executed) | <CONFIRM> | <CONFIRM> | <CONFIRM> | <CONFIRM> |
 
-No findings yet.
+**Open product defects after the incident: none.**

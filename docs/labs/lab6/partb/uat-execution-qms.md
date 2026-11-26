@@ -5,7 +5,7 @@ Every case, step and expected result below is copied from the partner team's fil
 - Cases: `docs/labs/lab-06/uat-cases.md`
 - Handoff: `docs/labs/lab-06/handoff.md`
 
-UAT-01 to UAT-04 have been executed and are filled in below. UAT-05 to UAT-08 are still an empty record: their Actual result, Evidence ID, Result and Defect link cells are deliberately blank.
+UAT-01 to UAT-08 have been executed and are filled in below; UAT-07 Parts 2 and 3 are BLOCKED (see that case). Defect link cells stay blank where there is no defect.
 
 ## Header
 
@@ -227,10 +227,10 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-05 |
 | Title | A customer cannot use operator screens or another customer's ticket |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts; the address of one of `customer1`'s ticket detail pages; the seeded queue id `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` ("General Inquiry Desk"). |
 
 **Preconditions (theirs):**
@@ -240,15 +240,15 @@ Earlier the same day, before the round window above, the partner's deployment re
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Window A: sign in as `customer1`, open **My Active Tickets**, select **View details** on a ticket, and copy the full address from the address bar (it has the form `<BASE_URL>/customer/entries/<id>`). Record the queue number shown. | *(no expected result given for step 1)* | | |
-| 2 | Window A: type `<BASE_URL>/operator` in the address bar and press Enter. | Steps 2 and 3: the browser ends on `/customer` (the customer's own screen). No "Call Next", "Start Service" or "Complete Service" button and no operator queue data appear at any point. (The spec does not say what message a wrong-role user should see; see handoff.md, Known limitations.) | | |
-| 3 | Window A: type `<BASE_URL>/operator/queues/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` and press Enter. | *(covered by the "Steps 2 and 3" expected result above)* | | |
-| 4 | Window B: sign in as `customer2`, then paste the address copied in step 1 and press Enter. | Step 4: the page heading is "Queue entry" and the only content is "We couldn't find that queue entry." No queue number, status, timestamps, customer ID or email of `customer1` is shown. | | |
-| 5 | Window B: sign out (**Logout**). Sign in as `operator1`, then type `<BASE_URL>/customer` and press Enter. | Step 5: the browser ends on `/operator` (the "Assigned queues" screen). No **Join Queue** button and no customer ticket list appear. | | |
+| 1 | Window A: sign in as `customer1`, open **My Active Tickets**, select **View details** on a ticket, and copy the full address from the address bar (it has the form `<BASE_URL>/customer/entries/<id>`). Record the queue number shown. | *(no expected result given for step 1)* | Step 1: not recorded | |
+| 2 | Window A: type `<BASE_URL>/operator` in the address bar and press Enter. | Steps 2 and 3: the browser ends on `/customer` (the customer's own screen). No "Call Next", "Start Service" or "Complete Service" button and no operator queue data appear at any point. (The spec does not say what message a wrong-role user should see; see handoff.md, Known limitations.) | `customer1` typed `/operator` in the address bar and was redirected back to `/customer`, with no operator controls visible. | EV-B-01_UAT-05_customer-to-operator-redirect |
+| 3 | Window A: type `<BASE_URL>/operator/queues/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` and press Enter. | *(covered by the "Steps 2 and 3" expected result above)* | `customer1` typed `/operator/queues/aaaaaaaa-...` in the address bar and was likewise redirected back to `/customer`, with no operator controls visible. | EV-B-01_UAT-05_customer-to-queue-redirect |
+| 4 | Window B: sign in as `customer2`, then paste the address copied in step 1 and press Enter. | Step 4: the page heading is "Queue entry" and the only content is "We couldn't find that queue entry." No queue number, status, timestamps, customer ID or email of `customer1` is shown. | When `customer2` opened the URL of `customer1`'s ticket, the page said the queue entry was not found, with HTTP status 404, and none of `customer1`'s ticket data was shown. | EV-B-01_UAT-05_customer2-other-ticket-denied |
+| 5 | Window B: sign out (**Logout**). Sign in as `operator1`, then type `<BASE_URL>/customer` and press Enter. | Step 5: the browser ends on `/operator` (the "Assigned queues" screen). No **Join Queue** button and no customer ticket list appear. | `operator1` typed `/customer` and was redirected back to `/operator`. | EV-B-01_UAT-05_operator-to-customer-redirect |
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
@@ -260,10 +260,10 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-06 |
 | Title | An operator not assigned to the queue cannot work it |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded account `operator2`; seeded queue id `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`. |
 
 **Preconditions (theirs):**
@@ -273,14 +273,14 @@ Earlier the same day, before the round window above, the partner's deployment re
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Sign in as `operator2`. | *(no expected result given for step 1)* | | |
-| 2 | Read the "Assigned queues" screen. | Step 2: the screen shows "You have no assigned service queues." and no **Manage queue** link. | | |
-| 3 | Type `<BASE_URL>/operator/queues/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` in the address bar and press Enter. | Step 3: the page shows "You do not have permission to manage this queue." There is no **Call Next** button, no "Waiting Queue — FIFO" section, and no queue number or "Customer ID:" value. | | |
+| 1 | Sign in as `operator2`. | *(no expected result given for step 1)* | `operator2` signed in and reached `/operator`. | |
+| 2 | Read the "Assigned queues" screen. | Step 2: the screen shows "You have no assigned service queues." and no **Manage queue** link. | `operator2` saw a message that no service queue is assigned, with no Manage queue button. | EV-B-01_UAT-06_operator2-no-assigned-queues |
+| 3 | Type `<BASE_URL>/operator/queues/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` in the address bar and press Enter. | Step 3: the page shows "You do not have permission to manage this queue." There is no **Call Next** button, no "Waiting Queue — FIFO" section, and no queue number or "Customer ID:" value. | Opening another queue's URL directly showed a message that `operator2` has no permission to manage this queue, HTTP status 403, with no customer list and no queue-management buttons. | EV-B-01_UAT-06_operator2-unauthorized-queue |
 | — (after step 3) | As `operator1`, check the queue page. | Afterwards, `operator1` still sees the same waiting entries as before (nothing was changed by `operator2`). | | |
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
 
 ---
@@ -292,10 +292,10 @@ Earlier the same day, before the round window above, the partner's deployment re
 | Case ID | UAT-07 |
 | Title | Data and history survive a refresh and a new sign-in; a completed ticket can be followed by a new one |
 | Category (Interface, from their file) | UI (tester); terminal on the owner's machine (owner, Parts 2 and 3) |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | Seeded accounts `customer1`, `operator1`. |
 
 **Preconditions (theirs):**
@@ -307,23 +307,29 @@ Earlier the same day, before the round window above, the partner's deployment re
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | As `customer1`, open **My Active Tickets** and press the browser's reload button. | Step 1: after the reload, ticket **N** is still listed for "General Inquiry Desk" with status Completed and its "Joined:", "Called:", "Service started:" and "Completed:" times. | | |
-| 2 | Select **Logout**, close the browser window, open a new one, go to `<BASE_URL>/login` and sign in as `customer1` again. | Step 2: after **Logout**, the browser shows the "Sign in" screen. After signing in again, it shows `/customer`. | | |
-| 3 | Open **My Active Tickets**, then **View details** on ticket **N**. | Step 3: ticket **N** is still in the list with status Completed. The detail page shows "Service completed." and "This entry is complete and no longer updates.", with the same times as in step 1. | | |
-| 4 | As `operator1`, reload the "General Inquiry Desk" queue page. | Step 4: ticket **N** is listed under "Completed (…)" with the same queue number. | | |
-| 5 | As `customer1`, go back to **Available Queues** and select **Join Queue** on "General Inquiry Desk". Record the number as **M**. Leave ticket **M** Waiting for Part 2. | Step 5: the join succeeds with "You joined General Inquiry Desk." and status Waiting. **M** is greater than **N** (numbers are not reused). **My Active Tickets** now shows both the new Waiting ticket **M** and the Completed ticket **N**. | | |
+| 1 | As `customer1`, open **My Active Tickets** and press the browser's reload button. | Step 1: after the reload, ticket **N** is still listed for "General Inquiry Desk" with status Completed and its "Joined:", "Called:", "Service started:" and "Completed:" times. | After Reload the old Completed ticket and its timestamps were still there, unchanged. | EV-B-01_UAT-07_reload-history |
+| 2 | Select **Logout**, close the browser window, open a new one, go to `<BASE_URL>/login` and sign in as `customer1` again. | Step 2: after **Logout**, the browser shows the "Sign in" screen. After signing in again, it shows `/customer`. | After closing the browser window and logging in as `customer1` again, the old Completed ticket and its timestamps were still there, unchanged. | |
+| 3 | Open **My Active Tickets**, then **View details** on ticket **N**. | Step 3: ticket **N** is still in the list with status Completed. The detail page shows "Service completed." and "This entry is complete and no longer updates.", with the same times as in step 1. | After the new sign-in the Completed ticket and its timestamps were still there, unchanged. | EV-B-01_UAT-07_relogin-detail-completed |
+| 4 | As `operator1`, reload the "General Inquiry Desk" queue page. | Step 4: ticket **N** is listed under "Completed (…)" with the same queue number. | Step 4: not recorded | |
+| 5 | As `customer1`, go back to **Available Queues** and select **Join Queue** on "General Inquiry Desk". Record the number as **M**. Leave ticket **M** Waiting for Part 2. | Step 5: the join succeeds with "You joined General Inquiry Desk." and status Waiting. **M** is greater than **N** (numbers are not reused). **My Active Tickets** now shows both the new Waiting ticket **M** and the Completed ticket **N**. | Joining the queue again gave number 6 with status Waiting, shown together with the earlier history in the My Active Tickets tab. | EV-B-01_UAT-07_rejoin-active-and-history |
+
+Observed after Part 1 (their clean-up): `operator1` called and completed number 6.
+
+**Part 1 result: PASS. Parts 2 and 3: BLOCKED** (not executed).
+
+> **BLOCKED note (Parts 2 and 3):** their case requires restarting a local API server or a database container, but the release under test runs on Cloud Run, where we have no access to restart it. The steps below were therefore not executed — this is not a pass. The case text assumes a local run while the release under test is the Cloud Run deployment; this handoff gap is reported to the partner as finding UATF-02 in `findings-reported.md`.
 
 ### Part 2: API server restart (owner does, tester checks)
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Tester: on **My Active Tickets**, write down each ticket's queue number, status and times (at least **M** Waiting and **N** Completed). | *(no expected result given for step 1)* | | |
-| 2 | Owner: in the terminal running `npm run dev:server`, press `Ctrl+C` and wait until the command has stopped. | Step 2: the owner's terminal returns to the prompt. While the API is stopped, the tester's open page may show "Could not refresh. Retrying..."; that is expected. | | |
-| 3 | Owner: start it again with the same command, `npm run dev:server`, and wait for the line `[QMS Server] Running on http://localhost:3000`. | Step 3: the owner's terminal shows `[QMS Server] Running on http://localhost:3000`. | | |
-| 4 | Tester: as `customer1`, press the browser's reload button on **My Active Tickets**. | Step 4: the tester is still signed in (sessions are stored in the database), no "Sign in" screen appears, and the list matches step 1 exactly: **M** Waiting, **N** Completed, same numbers and times. | | |
-| 5 | Tester: as `operator1`, reload the "General Inquiry Desk" queue page. | Step 5: "Waiting Queue — FIFO (1)" lists **M** at position #1; ticket **N** is under "Completed (…)". | | |
-| 6 | Tester: as `operator1`, select **Call Next**, then **Start Service** and **Complete Service** on ticket **M**. | Step 6: the banners show "Called queue number M.", "Started service for queue number M." and "Completed service for queue number M." | | |
-| 7 | Tester: as `customer1`, join "General Inquiry Desk" again. Record the number as **P**. | Step 7: the join succeeds with status Waiting and **P** is greater than **M**; if no one else joined in between, **P** is **M** + 1. Numbering continued after the restart instead of starting again. | | |
+| 1 | Tester: on **My Active Tickets**, write down each ticket's queue number, status and times (at least **M** Waiting and **N** Completed). | *(no expected result given for step 1)* | Part 2, Step 1: not recorded (BLOCKED) | |
+| 2 | Owner: in the terminal running `npm run dev:server`, press `Ctrl+C` and wait until the command has stopped. | Step 2: the owner's terminal returns to the prompt. While the API is stopped, the tester's open page may show "Could not refresh. Retrying..."; that is expected. | Part 2, Step 2: not recorded (BLOCKED) | |
+| 3 | Owner: start it again with the same command, `npm run dev:server`, and wait for the line `[QMS Server] Running on http://localhost:3000`. | Step 3: the owner's terminal shows `[QMS Server] Running on http://localhost:3000`. | Part 2, Step 3: not recorded (BLOCKED) | |
+| 4 | Tester: as `customer1`, press the browser's reload button on **My Active Tickets**. | Step 4: the tester is still signed in (sessions are stored in the database), no "Sign in" screen appears, and the list matches step 1 exactly: **M** Waiting, **N** Completed, same numbers and times. | Part 2, Step 4: not recorded (BLOCKED) | |
+| 5 | Tester: as `operator1`, reload the "General Inquiry Desk" queue page. | Step 5: "Waiting Queue — FIFO (1)" lists **M** at position #1; ticket **N** is under "Completed (…)". | Part 2, Step 5: not recorded (BLOCKED) | |
+| 6 | Tester: as `operator1`, select **Call Next**, then **Start Service** and **Complete Service** on ticket **M**. | Step 6: the banners show "Called queue number M.", "Started service for queue number M." and "Completed service for queue number M." | Part 2, Step 6: not recorded (BLOCKED) | |
+| 7 | Tester: as `customer1`, join "General Inquiry Desk" again. Record the number as **P**. | Step 7: the join succeeds with status Waiting and **P** is greater than **M**; if no one else joined in between, **P** is **M** + 1. Numbering continued after the restart instead of starting again. | Part 2, Step 7: not recorded (BLOCKED) | |
 
 ### Part 3 (optional): database container restart (owner does, tester checks)
 
@@ -333,20 +339,20 @@ The data survives this restart because `docker-compose.yml` stores PostgreSQL's 
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Tester: on **My Active Tickets**, write down ticket **P**'s number and status (Waiting) and the numbers of the Completed tickets. | *(no expected result given for step 1)* | | |
-| 2 | Owner: press `Ctrl+C` in the `npm run dev:server` terminal. | *(no expected result given for step 2)* | | |
-| 3 | Owner: run `docker compose restart postgres` from the repository root, then run `docker compose ps` until the `qms-postgres` container shows as healthy. | Step 3: `docker compose ps` shows `qms-postgres` running and healthy. | | |
-| 4 | Owner: start the API again with `npm run dev:server` and wait for `[QMS Server] Running on http://localhost:3000`. | *(no expected result given for step 4)* | | |
-| 5 | Tester: as `customer1`, reload **My Active Tickets**. | Step 5: the tester is still signed in and the list matches step 1: **P** Waiting, the earlier tickets Completed, same numbers and times. | | |
-| 6 | Tester: as `operator1`, reload the queue page, then complete ticket **P** (**Call Next**, **Start Service**, **Complete Service**). | Step 6: "Called queue number P." is shown first (FIFO is unchanged), then the Start and Complete banners for **P**. | | |
-| 7 | Tester: as `customer1`, join "General Inquiry Desk" again. Record the number as **Q**. | Step 7: **Q** is greater than **P**; if no one else joined in between, **Q** is **P** + 1. | | |
+| 1 | Tester: on **My Active Tickets**, write down ticket **P**'s number and status (Waiting) and the numbers of the Completed tickets. | *(no expected result given for step 1)* | Part 3, Step 1: not recorded (BLOCKED) | |
+| 2 | Owner: press `Ctrl+C` in the `npm run dev:server` terminal. | *(no expected result given for step 2)* | Part 3, Step 2: not recorded (BLOCKED) | |
+| 3 | Owner: run `docker compose restart postgres` from the repository root, then run `docker compose ps` until the `qms-postgres` container shows as healthy. | Step 3: `docker compose ps` shows `qms-postgres` running and healthy. | Part 3, Step 3: not recorded (BLOCKED) | |
+| 4 | Owner: start the API again with `npm run dev:server` and wait for `[QMS Server] Running on http://localhost:3000`. | *(no expected result given for step 4)* | Part 3, Step 4: not recorded (BLOCKED) | |
+| 5 | Tester: as `customer1`, reload **My Active Tickets**. | Step 5: the tester is still signed in and the list matches step 1: **P** Waiting, the earlier tickets Completed, same numbers and times. | Part 3, Step 5: not recorded (BLOCKED) | |
+| 6 | Tester: as `operator1`, reload the queue page, then complete ticket **P** (**Call Next**, **Start Service**, **Complete Service**). | Step 6: "Called queue number P." is shown first (FIFO is unchanged), then the Start and Complete banners for **P**. | Part 3, Step 6: not recorded (BLOCKED) | |
+| 7 | Tester: as `customer1`, join "General Inquiry Desk" again. Record the number as **Q**. | Step 7: **Q** is greater than **P**; if no one else joined in between, **Q** is **P** + 1. | Part 3, Step 7: not recorded (BLOCKED) | |
 
 **Clean-up (theirs):** ask `operator1` to call, start and complete the last ticket you created (**M** if you stopped after Part 1, **P** after Part 2, **Q** after Part 3).
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
-| Defect link | |
+| Result (PASS/FAIL/BLOCKED) | PARTIAL — Part 1: PASS; Parts 2 and 3: BLOCKED (see the BLOCKED note above Part 2) |
+| Defect link | Handoff gap reported as UATF-02 in `findings-reported.md` |
 
 ---
 
@@ -357,24 +363,26 @@ The data survives this restart because `docker-compose.yml` stores PostgreSQL's 
 | Case ID | UAT-08 |
 | Title | Sign-in is refused for a wrong password, and sign-out ends the session |
 | Category (Interface, from their file) | UI only |
-| Tester (executor) | |
-| Observer | |
-| Date/time | |
-| Tested version | |
+| Tester (executor) | <CONFIRM> |
+| Observer | <CONFIRM> |
+| Date/time | Within 2026-11-26, 12:22-18:05; exact time <CONFIRM> |
+| Tested version | QMS Release v1.1, commit e304cd9 (as shown by the app) |
 | Inputs used | The sign-in name of `customer1` with an obviously wrong password (value not recorded in this document); an obviously fake sign-in name, for example `nobody-uat` at a fake domain such as `example.invalid` (written as name@domain). |
+
+Observed as part of this case's environment check: the app was reachable on Cloud Run and showed "QMS - Release v1.1" (EV-B-01_UAT-08_cloud-run-live).
 
 **Preconditions (theirs):** the tester is signed out.
 
 | Step | Action (from their case) | Their expected result (from their case) | Actual result | Evidence ID |
 |---|---|---|---|---|
-| 1 | Open `<BASE_URL>/customer` while signed out. | Step 1: the browser shows the "Sign in" screen at `/login`, without the "Session expired. Please sign in again." banner. | | |
-| 2 | On the "Sign in" screen, select **Sign in** with both fields empty. | Step 2: the field messages "Email is required." and "Password is required." are shown and no sign-in happens. | | |
-| 3 | Enter the `customer1` sign-in name with the wrong password and select **Sign in**. | Steps 3 and 4: both attempts show exactly the same message, "Invalid email or password.", and stay on `/login`. Nothing on the page says whether the account exists. | | |
-| 4 | Enter the fake sign-in name with the same wrong password and select **Sign in**. | *(covered by the "Steps 3 and 4" expected result above)* | | |
-| 5 | Sign in as `customer1` with the correct password, then select **Logout**. | Step 5: sign-in goes to `/customer`; **Logout** returns to the "Sign in" screen. | | |
-| 6 | Open `<BASE_URL>/customer` again. | Step 6: the browser shows the "Sign in" screen again; no customer data is shown. | | |
+| 1 | Open `<BASE_URL>/customer` while signed out. | Step 1: the browser shows the "Sign in" screen at `/login`, without the "Session expired. Please sign in again." banner. | Opening a protected page without being logged in redirected to `/login`. | EV-B-01_UAT-08_unauth-redirect |
+| 2 | On the "Sign in" screen, select **Sign in** with both fields empty. | Step 2: the field messages "Email is required." and "Password is required." are shown and no sign-in happens. | Signing in with empty fields showed a validation message. | EV-B-01_UAT-08_empty-fields-validation |
+| 3 | Enter the `customer1` sign-in name with the wrong password and select **Sign in**. | Steps 3 and 4: both attempts show exactly the same message, "Invalid email or password.", and stay on `/login`. Nothing on the page says whether the account exists. | Step 3: not recorded | |
+| 4 | Enter the fake sign-in name with the same wrong password and select **Sign in**. | *(covered by the "Steps 3 and 4" expected result above)* | Step 4: not recorded | |
+| 5 | Sign in as `customer1` with the correct password, then select **Logout**. | Step 5: sign-in goes to `/customer`; **Logout** returns to the "Sign in" screen. | Step 5: not recorded | |
+| 6 | Open `<BASE_URL>/customer` again. | Step 6: the browser shows the "Sign in" screen again; no customer data is shown. | Step 6: not recorded | |
 
 | Field | Value |
 |---|---|
-| Result (PASS/FAIL/BLOCKED) | |
+| Result (PASS/FAIL/BLOCKED) | PASS |
 | Defect link | |
