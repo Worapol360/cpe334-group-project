@@ -12,7 +12,7 @@ This document describes how the application is built, tested and run today, whic
 |---|---|---|
 | Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Implemented — pending first run on main (Issue: #29, #31) |
 | Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
-| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | TODO — Issue: L5-08 persistence |
+| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | PARTIAL — restart persistence verified with identical image-digest evidence; redeploy pending (Step 3), C-05 PARTIAL (Issue: L5-08) |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
 | GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Implemented — pending first run on main (Issue: #28, #30, #31) |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
@@ -123,7 +123,22 @@ npm test                             # all three, in that order
   - `s3ed50763-demo-password`
 - **Release procedure**: TODO (Issue: L5-07) — expected shape: push to `main` → CI (`ci-docker.yml`) → `deploy.yml` builds the image tagged with the commit SHA → `deploy/release.sh` migrates and updates the Cloud Run service → `deploy/smoke_test.py` checks the public URL; manual rollback by re-running the workflow with a previous image tag.
 - **How to find the running commit**: TODO (Issue: L5-07) — the image tag is the full commit SHA; confirm via the workflow's deployment summary / Cloud Run revision metadata.
-- **Persistence evidence**: TODO (Issue: L5-08) — demonstrate data (including sessions) surviving a container restart against Cloud SQL.
+- **Persistence evidence (L5-08)**: procedure and evidence (Figures 1–3 recorded; restart verified with identical image-digest evidence; Step 3 pending) — see [persistence-test.md](persistence-test.md).
+
+### 7.1 Persistence test result (L5-08 / C-05)
+
+**Status: PARTIAL — restart verified with image-digest evidence, redeploy pending (Step 3); overall C-05 = PARTIAL.** L5-08 is **not** complete — Step 3 runs through the next release PR to `main` and will be recorded later as Figures 4 and 5 in [persistence-test.md](persistence-test.md).
+
+Full procedure, command packs, evidence table (Figures 1–3) and cost-control commands: **[persistence-test.md](persistence-test.md)**.
+
+| Check | Before restart | After restart | After redeploy |
+|---|---|---|---|
+| Revision / time | `s3ed50763-00003-6dt` — `2026-11-24T00:24:32.958Z` | `s3ed50763-00004-ssd` (100% traffic, same image from `7a705e2`) — `2026-11-24T00:28:30.472Z` | PENDING |
+| Survey ID 5 / response count | survey ID `5`, `1` response | survey ID `5`, `1` response (unchanged) | PENDING |
+| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | same SHA returned; owner1 session still valid within the 60-minute TTL | PENDING |
+| Image digest (restart pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — identical digest: restart changed only the revision, not the image | PENDING (new SHA expected) |
+
+**Cost-control summary**: Cloud Run `min-instances 0` / `max-instances 3` (idle scales to zero); Cloud SQL `s3ed50763-pg` on tier `db-f1-micro`; pause with `--activation-policy=NEVER` when idle (data and storage are kept — stopping deletes nothing) and resume with `ALWAYS`, then confirm running, before every test **and every deploy/release** (the migration job and the app need the database). Read-only describe commands and the state-changing pause/resume pack are in [persistence-test.md §8](persistence-test.md#8-cost-control).
 
 ## 8. Docker Verification and Evidence (L5-03 / #27)
 
