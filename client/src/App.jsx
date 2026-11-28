@@ -94,7 +94,7 @@ export default function App() {
           <Route
             path="/surveys"
             element={
-              <RequireAuth role="respondent">
+              <RequireAuth>
                 <Surveys />
               </RequireAuth>
             }
