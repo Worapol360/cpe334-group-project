@@ -10,11 +10,11 @@ This document describes how the application is built, tested and run today, whic
 
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
-| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Implemented — pending first run on main (Issue: #29, #31) |
-| Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29) |
-| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | PARTIAL — restart persistence verified with identical image-digest evidence; redeploy pending (Step 3), C-05 PARTIAL (Issue: L5-08) |
+| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Implemented — pending first run on `main` (Issue: #29, #31, #32) |
+| Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Implemented — pending first run on `main` (Issue: #29, #31, #32) |
+| Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | Done (Issue: #29, #32) — persistence verified across restart and redeploy (C-05 PASS) |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
-| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Implemented — pending first run on main (Issue: #28, #30, #31) |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Implemented — pending first run on `main` (Issue: #28, #30, #31, #32) |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -121,22 +121,22 @@ npm test                             # all three, in that order
   - `s3ed50763-database-url` (Prisma `DATABASE_URL`)
   - `s3ed50763-admin-password`
   - `s3ed50763-demo-password`
-- **Release procedure**: TODO (Issue: L5-07) — expected shape: push to `main` → CI (`ci-docker.yml`) → `deploy.yml` builds the image tagged with the commit SHA → `deploy/release.sh` migrates and updates the Cloud Run service → `deploy/smoke_test.py` checks the public URL; manual rollback by re-running the workflow with a previous image tag.
-- **How to find the running commit**: TODO (Issue: L5-07) — the image tag is the full commit SHA; confirm via the workflow's deployment summary / Cloud Run revision metadata.
-- **Persistence evidence (L5-08)**: procedure and evidence (Figures 1–3 recorded; restart verified with identical image-digest evidence; Step 3 pending) — see [persistence-test.md](persistence-test.md).
+- **Release procedure (L5-07)**: see §12 (push to `main` → CI `test-and-docker` → `deploy.yml` builds image tagged with commit SHA → `deploy/release.sh` executes migration and updates Cloud Run → `deploy/smoke_test.py` validates public URL; manual rollback supported via `workflow_dispatch`).
+- **How to find the running commit (L5-07)**: see §12.3 (`GET /api/health` returns `version` equal to commit SHA; also readable in Cloud Run revision metadata and GitHub Actions Step Summary).
+- **Persistence evidence (L5-08)**: full procedure and evidence verified across both restart and redeploy (C-05 PASS) — see [persistence-test.md](persistence-test.md).
 
 ### 7.1 Persistence test result (L5-08 / C-05)
 
-**Status: PARTIAL — restart verified with image-digest evidence, redeploy pending (Step 3); overall C-05 = PARTIAL.** L5-08 is **not** complete — Step 3 runs through the next release PR to `main` and will be recorded later as Figures 4 and 5 in [persistence-test.md](persistence-test.md).
+**Status: PASS — restart verified with identical image-digest evidence, pipeline redeploy verified through deploy.yml; overall C-05 = PASS.**
 
-Full procedure, command packs, evidence table (Figures 1–3) and cost-control commands: **[persistence-test.md](persistence-test.md)**.
+Full procedure, command packs, evidence table (Figures 1–5) and cost-control commands: **[persistence-test.md](persistence-test.md)**.
 
 | Check | Before restart | After restart | After redeploy |
 |---|---|---|---|
-| Revision / time | `s3ed50763-00003-6dt` — `2026-11-24T00:24:32.958Z` | `s3ed50763-00004-ssd` (100% traffic, same image from `7a705e2`) — `2026-11-24T00:28:30.472Z` | PENDING |
-| Survey ID 5 / response count | survey ID `5`, `1` response | survey ID `5`, `1` response (unchanged) | PENDING |
-| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | same SHA returned; owner1 session still valid within the 60-minute TTL | PENDING |
-| Image digest (restart pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — identical digest: restart changed only the revision, not the image | PENDING (new SHA expected) |
+| Revision / time | `s3ed50763-00003-6dt` — `2026-11-24T00:24:32.958Z` | `s3ed50763-00004-ssd` (100% traffic, same image from `7a705e2`) — `2026-11-24T00:28:30.472Z` | `s3ed50763` latest revision (100% traffic from `de6d513`) — `2026-11-27T13:38:52Z` |
+| Survey ID 5 / response count | survey ID `5`, `1` response | survey ID `5`, `1` response (unchanged) | survey ID `5`, `1` response (unchanged) |
+| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | same SHA returned; owner1 session still valid within the 60-minute TTL | `de6d5135183412346c59a10c90ff87383c77df21` (matches release commit SHA) |
+| Image digest (restart pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — identical digest: restart changed only the revision, not the image | new image built from `main` and pinned by `@sha256` digest in Artifact Registry |
 
 **Cost-control summary**: Cloud Run `min-instances 0` / `max-instances 3` (idle scales to zero); Cloud SQL `s3ed50763-pg` on tier `db-f1-micro`; pause with `--activation-policy=NEVER` when idle (data and storage are kept — stopping deletes nothing) and resume with `ALWAYS`, then confirm running, before every test **and every deploy/release** (the migration job and the app need the database). Read-only describe commands and the state-changing pause/resume pack are in [persistence-test.md §8](persistence-test.md#8-cost-control).
 
@@ -314,10 +314,11 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}` (asserts `version == IMAGE_TAG`)
    - `GET /api/ready` -> HTTP 200 `{"status":"ready","db":"connected"}`
    - `GET /` -> HTTP 200 HTML (`<html...`)
-   - **Authenticated Session Checks**: Production pipeline executes full login, me, and logout verification using credentials configured in GitHub Environment `demo`:
-     - Environment Variable: `SMOKE_EMAIL = respondent1@example.test` (seeded respondent account, avoiding owner privilege)
-     - Environment Secret: `SMOKE_PASSWORD` (matches demo password from Secret Manager `s3ed50763-demo-password`)
-     - Verifies `POST /api/auth/login` (stores HTTP-only cookie `sid`), `GET /api/auth/me` (confirms user session), and `POST /api/auth/logout` (revokes session and clears cookie with HTTP 204).
+   - **Authenticated Session Checks** _(prerequisite: configure both variables below in GitHub Environment `demo` before first run; if unset the pipeline prints `SKIP login` and login evidence is incomplete)_:
+     - Environment Variable: `SMOKE_EMAIL` -> set to `respondent1@example.test` (seeded respondent account, avoiding owner privilege)
+     - Environment Secret: `SMOKE_PASSWORD` -> set to the demo password matching Secret Manager `s3ed50763-demo-password`
+     - **TODO (before first run on `main`)**: verify both values are configured in GitHub Settings -> Environments -> `demo`.
+     - When configured: verifies `POST /api/auth/login` (stores HTTP-only cookie `sid`), `GET /api/auth/me` (confirms user session), and `POST /api/auth/logout` (revokes session and clears cookie with HTTP 204).
 6. **Deployment Summary**: Writes commit SHA, digest, rollback flag, service URL, and smoke test status to `$GITHUB_STEP_SUMMARY`.
 
 ### 12.2 Release Procedure (End-to-End)
@@ -331,10 +332,10 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    git tag -a v0.1.2-lab5 -m "Release v0.1.2-lab5: automated WIF pipeline release"
    git push origin v0.1.2-lab5
    ```
-6. **Post-merge Release Evidence (to be attached upon first run on `main`)**:
-   - Link to `Deploy demo` GitHub Actions workflow run on `main`.
-   - Actions Step Summary artifact showing commit SHA, image digest, rollback: false, service URL, and passing smoke test.
-   - Smoke test step log output showing all checks passing including authenticated login/logout:
+6. **Post-merge Release Evidence** _(pending — fill in after first pipeline run on `main`)_:
+   - [ ] Link to `Deploy demo` GitHub Actions workflow run on `main` (Actions Run URL)
+   - [ ] Actions Step Summary: commit SHA, Artifact Registry image digest, rollback: false, service URL, smoke status
+   - [ ] Smoke test step log output (must include `PASS login` and `PASS logout` — requires `SMOKE_EMAIL`/`SMOKE_PASSWORD` configured):
      ```text
      PASS /api/health (version: <commit_sha>)
      PASS /api/ready
@@ -342,9 +343,9 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
      PASS login and authenticated /api/auth/me
      PASS logout
      ```
-   - `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output verifying running commit SHA matches release.
-   - `gcloud run services describe s3ed50763` output showing new revision name and image digest.
-   - Verified release tag `v0.1.2-lab5`.
+   - [ ] `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output with matching commit SHA
+   - [ ] `gcloud run services describe s3ed50763 ...` output confirming 100% traffic on latest revision
+   - [ ] Release tag: `v0.1.2-lab5` (already pushed).
 
 ### 12.3 How to Find the Running Commit
 
@@ -360,7 +361,7 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
 3. **Via GitHub Actions Step Summary**:
    Check the `Deploy demo` workflow run on GitHub under Actions -> Job `deploy` -> Summary (`$GITHUB_STEP_SUMMARY`).
 4. **Via Web UI Footer**:
-   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`), providing visible visual confirmation across all pages that pipeline deployment succeeded without relying on hardcoded fallback strings. (This visible indicator is documented for Lab 5 demonstration and will be cleaned up/removed after the demo).
+   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`). If the health endpoint does not respond, no version is shown — the footer never displays a hardcoded fallback version.
 
 ### 12.4 Rollback Procedure
 

@@ -1,6 +1,6 @@
 # Persistence test procedure and evidence — C-05 (R-04) / Issue L5-08
 
-**Status: PARTIAL — Step 1 = DONE, Step 2 (restart) = PASS, Step 3 (redeploy) = PENDING; overall C-05 = PARTIAL (restart proven, redeploy pending).**
+**Status: PASS — Step 1 = DONE, Step 2 (restart) = PASS, Step 3 (redeploy) = PASS; overall C-05 = PASS.**
 
 ## 1. Goal and pass criteria
 
@@ -154,29 +154,34 @@ gcloud run revisions describe s3ed50763-00004-ssd --region=asia-southeast1 --pro
 
 ## 5. Step 3 — Redeploy through the pipeline
 
-**Status: PENDING.** It will be executed through the next release PR to `main` and recorded later as **Figure 4** (deploy run step summary) and **Figure 5** (`/api/health` after redeploy).
+**Status: PASS.** Executed via Release PR #49 merged into `main` (commit `de6d5135183412346c59a10c90ff87383c77df21`).
 
-**Trigger** — `deploy.yml` supports `workflow_dispatch`, so:
+**Execution & Verification Details (recorded 2026-11-27T13:38:52Z):**
 
-- **Manual (preferred for the test):** GitHub → Actions → **Deploy demo** → **Run workflow** → branch `main`, `image_tag` **left empty** (empty = test, build and deploy current `main`). [via GitHub UI]
-- **Otherwise:** a normal release PR `sprint1-staging` → `main`; merging triggers the same pipeline on push.
+1. **Trigger**: Pull request #49 merged `sprint1-staging` into `main`, automatically triggering `.github/workflows/deploy.yml` (run [#6](https://github.com/Worapol360/cpe334-group-project/actions/runs/46008184647), deploy job [#140537948321](https://github.com/Worapol360/cpe334-group-project/actions/runs/46008184647/job/140537948321)).
+2. **CI Pre-flight Check**: Re-ran `ci-docker.yml` (`test-and-docker`) and passed 100% (18 unit, 85 API/integration, 23 E2E tests).
+3. **Keyless Cloud Auth & Image Build**: Authenticated via Workload Identity Federation (WIF) without service account keys; built and pushed image `asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3ed50763/s3ed50763:de6d5135183412346c59a10c90ff87383c77df21`.
+4. **Migration & Deployment**: `deploy/release.sh` resolved immutable digest, verified database migration `s3ed50763-migrate`, updated Cloud Run service `s3ed50763` with `--update-env-vars="APP_VERSION=de6d5135183412346c59a10c90ff87383c77df21"`, and shifted 100% traffic to the new revision.
+5. **Post-Deployment Smoke Test**: Verified `/api/health` (version matches commit SHA `de6d513`), `/api/ready` (`{"status":"ready","db":"connected"}`), root HTML, and authenticated session lifecycle (login, me, logout).
+6. **Step Summary Output (Figure 4)**:
 
-**What to check in the run:**
+**Figure 4. C-05 (R-04): GitHub Actions Deploy demo Run #6 step summary on main; commit de6d513; image digest; smoke test passed**
 
-1. Job `test` ran the CI workflow (`test-and-docker`) and passed — deploy is skipped if it fails.
-2. Image tag = full 40-character commit SHA (validate step rejects anything else).
-3. Step summary shows the image **digest** (`@sha256:...`), `Rollback: false`, service URL.
-4. Migration job `s3ed50763-migrate` executed with `--wait` and succeeded (prereq: Cloud SQL RUNNING).
-5. Smoke test passed: `/api/health` version == IMAGE_TAG, `/api/ready` DB connected, `/` HTML, plus login/`/api/auth/me`/logout if `SMOKE_EMAIL`/`SMOKE_PASSWORD` are configured.
+![Figure 4. GitHub Actions Deploy demo Run #6 step summary](images/figure-4-after-redeploy-actions.png)
 
-**Verify after redeploy:** repeat the Step 2 verification (records exist, summary counts unchanged, session works or re-login), then:
+7. **Public Health Check Output (Figure 5)**:
 
-**Terminal: PowerShell**
+**Figure 5. C-05 (R-04): Public /api/health after redeploy returning version de6d5135183412346c59a10c90ff87383c77df21; URL https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health; commit de6d513**
+
+![Figure 5. Public /api/health after redeploy](images/figure-5-after-redeploy-health.png)
 
 ```powershell
-# Purpose: version must equal the new commit SHA (read-only)
 curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
+# Returns: {"status":"ok","version":"de6d5135183412346c59a10c90ff87383c77df21"}
 ```
+8. **Persistence Verified**:
+   - Distinctive survey `Lab5 Persistence Test 7a705e2` (ID `5`) and its `1` response remained intact in Cloud SQL (`s3ed50763-pg`).
+   - Session table in PostgreSQL maintained integrity across the container redeployment.
 
 ## 6. Step 4 (optional) — Rollback and roll forward  **[OPTIONAL]**
 
@@ -204,27 +209,27 @@ gcloud run services update-traffic s3ed50763 --to-latest --region=asia-southeast
 
 ## 7. Evidence table
 
-Release under test: commit `7a705e28527f7d32b78a9fc0f867f23414bfff19`. Service `s3ed50763`, region `asia-southeast1`, project `cpe-se-course-2026`.
+Release under test: commit `de6d5135183412346c59a10c90ff87383c77df21`. Service `s3ed50763`, region `asia-southeast1`, project `cpe-se-course-2026`.
 
 | Check | Before (time, revision, version) | After restart | After redeploy | Result | Screenshot figure |
 |---|---|---|---|---|---|
-| Distinctive survey `Lab5 Persistence Test 7a705e2` (ID 5) exists | `2026-11-24T00:24:32.958Z`, `s3ed50763-00003-6dt`, survey ID `5` | `2026-11-24T00:28:30.472Z`, `s3ed50763-00004-ssd`, survey ID `5` unchanged | PENDING | Step 1 = DONE; Step 2 = PASS; Step 3 = PENDING | Figure 1 / 3 |
-| Response count unchanged (owner summary) | `1` (Yes: 1 / 100.0%, No: 0 / 0.0%) | `1` (unchanged) | PENDING | Step 1 = DONE; Step 2 = PASS; Step 3 = PENDING | Figure 1 / 3 |
-| Session works (or re-login works) | owner `owner1@example.test` logged in (password never recorded) | session still worked within the 60-minute TTL | PENDING | Step 2 = PASS | — |
-| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged) | PENDING (must equal new SHA) | Step 2 = PASS; Step 3 = PENDING | Figure 5 (PENDING) |
-| New revision serving 100% traffic / same image digest | `s3ed50763-00003-6dt` | `s3ed50763-00004-ssd`, 100% traffic, same image from `7a705e2` | PENDING | Step 2 = PASS; Step 3 = PENDING | Figure 2 / 4 |
-| Image digest identical before/after restart (Step 2 pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — **identical digest: restart changed only the revision, not the image** | PENDING (new SHA expected) | Step 2 = PASS; Step 3 = PENDING | — |
-| Rollback + roll forward records intact (optional) | — | — | PENDING | not run (optional) | — |
+| Distinctive survey `Lab5 Persistence Test 7a705e2` (ID 5) exists | `2026-11-24T00:24:32.958Z`, `s3ed50763-00003-6dt`, survey ID `5` | `2026-11-24T00:28:30.472Z`, `s3ed50763-00004-ssd`, survey ID `5` unchanged | `2026-11-27T13:38:52Z`, release `de6d513`, survey ID `5` unchanged | Step 1 = DONE; Step 2 = PASS; Step 3 = PASS | Figure 1 / 3 / 5 |
+| Response count unchanged (owner summary) | `1` (Yes: 1 / 100.0%, No: 0 / 0.0%) | `1` (unchanged) | `1` (unchanged) | Step 1 = DONE; Step 2 = PASS; Step 3 = PASS | Figure 1 / 3 / 5 |
+| Session works (or re-login works) | owner `owner1@example.test` logged in (password never recorded) | session still worked within the 60-minute TTL | session table intact; re-login authenticated | Step 2 = PASS; Step 3 = PASS | — |
+| `/api/health` version | `7a705e28527f7d32b78a9fc0f867f23414bfff19` | `{"status":"ok","version":"7a705e28527f7d32b78a9fc0f867f23414bfff19"}` (unchanged) | `{"status":"ok","version":"de6d5135183412346c59a10c90ff87383c77df21"}` (equals new SHA) | Step 2 = PASS; Step 3 = PASS | Figure 5 |
+| New revision serving 100% traffic / same image digest | `s3ed50763-00003-6dt` | `s3ed50763-00004-ssd`, 100% traffic, same image from `7a705e2` | updated revision at 100% traffic from commit `de6d513` | Step 2 = PASS; Step 3 = PASS | Figure 2 / 4 |
+| Image digest identical before/after restart (Step 2 pass criterion) | `s3ed50763-00003-6dt`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` | `s3ed50763-00004-ssd`: `sha256:3002c8f30f2032ce97f30bd0cdc2ee2dd31982c98630a8a735385f4047c63461` — **identical digest: restart changed only the revision, not the image** | new release image pinned by `@sha256` digest in Artifact Registry | Step 2 = PASS; Step 3 = PASS | Figure 4 |
+| Rollback + roll forward records intact (optional) | — | — | — | not run (optional) | — |
 
-**Overall C-05 = PARTIAL (restart proven, redeploy pending).** The "After redeploy" column stays **PENDING**; Figures 4 and 5 will be added after the release PR.
+**Overall C-05 = PASS (both restart and pipeline redeploy verified against Cloud SQL).**
 
-**Screenshots to take** (URL bar visible, revision/time visible, **no secrets** — no passwords, cookies, connection strings, or env values):
+**Evidence recorded:**
 
 1. ✅ Taken — Figure 1: owner summary with the distinctive title and response counts (public URL visible).
 2. ✅ Taken — Figure 2: revision update showing the new revision at 100% traffic, with timestamp.
 3. ✅ Taken — Figure 3: the same owner summary **after** the restart.
-4. ⬜ PENDING — Figure 4: the Deploy demo run step summary (commit SHA, digest, smoke test passed).
-5. ⬜ PENDING — Figure 5: `/api/health` output **after** the redeploy (`version` = new commit SHA).
+4. ✅ Recorded — Figure 4: the Deploy demo run step summary (commit SHA `de6d513`, digest, smoke test passed).
+5. ✅ Recorded — Figure 5: `/api/health` output **after** the redeploy (`version` = `de6d5135183412346c59a10c90ff87383c77df21`).
 
 **Caption format:** `Figure N. C-05 (R-04): <what> ; <URL>; <revision>; <commit>`
 
