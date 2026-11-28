@@ -10,11 +10,11 @@ This document describes how the application is built, tested and run today, whic
 
 | Reference (Lab 5) | In this repo today | Status |
 |---|---|---|
-| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Done (Issue: #29, #31, #32) |
-| Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Done (Issue: #29, #31, #32) |
+| Artifact Registry (image registry) | Unified multi-stage `Dockerfile` exists at repo root; commit-SHA images pushed to Artifact Registry | Implemented — pending first run on `main` (Issue: #29, #31, #32) |
+| Cloud Run (service) | Deployed on Cloud Run (`s3ed50763`) serving Express API + built SPA over HTTPS | Implemented — pending first run on `main` (Issue: #29, #31, #32) |
 | Cloud SQL for PostgreSQL | Local only: PostgreSQL 16 via `docker-compose.yml` on host port 5433; Cloud SQL `s3ed50763-pg` provisioned | Done (Issue: #29, #32) — persistence verified across restart and redeploy (C-05 PASS) |
 | Secret Manager | Secret Manager stores `DATABASE_URL` (`s3ed50763-database-url`), admin and demo secrets; injected to Cloud Run | Done (Issue: #29) |
-| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Done (Issue: #28, #30, #31, #32) |
+| GitHub Actions | CI runs on every pull request (`.github/workflows/ci-docker.yml`, job `test-and-docker`, see §9); automated deploy on push to `main` (`deploy.yml`) with WIF and smoke testing | Implemented — pending first run on `main` (Issue: #28, #30, #31, #32) |
 | Docker image build for the app | Unified multi-stage `Dockerfile` at root for Cloud Run / production; `docker-compose.yml` with `db`, `migrate`, `server`, and `client` services; compose healthchecks on `db` and `server` (`/api/ready`); `/api/health` and `/api/ready` endpoints | Done (Issue: #27) |
 
 Not a change, but worth noting: the server is plain JavaScript (ESM) with Prisma, not TypeScript as some starter comments suggest.
@@ -314,10 +314,11 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    - `GET /api/health` -> HTTP 200 `{"status":"ok","version":"<commit_sha>"}` (asserts `version == IMAGE_TAG`)
    - `GET /api/ready` -> HTTP 200 `{"status":"ready","db":"connected"}`
    - `GET /` -> HTTP 200 HTML (`<html...`)
-   - **Authenticated Session Checks**: Production pipeline executes full login, me, and logout verification using credentials configured in GitHub Environment `demo`:
-     - Environment Variable: `SMOKE_EMAIL = respondent1@example.test` (seeded respondent account, avoiding owner privilege)
-     - Environment Secret: `SMOKE_PASSWORD` (matches demo password from Secret Manager `s3ed50763-demo-password`)
-     - Verifies `POST /api/auth/login` (stores HTTP-only cookie `sid`), `GET /api/auth/me` (confirms user session), and `POST /api/auth/logout` (revokes session and clears cookie with HTTP 204).
+   - **Authenticated Session Checks** _(prerequisite: configure both variables below in GitHub Environment `demo` before first run; if unset the pipeline prints `SKIP login` and login evidence is incomplete)_:
+     - Environment Variable: `SMOKE_EMAIL` -> set to `respondent1@example.test` (seeded respondent account, avoiding owner privilege)
+     - Environment Secret: `SMOKE_PASSWORD` -> set to the demo password matching Secret Manager `s3ed50763-demo-password`
+     - **TODO (before first run on `main`)**: verify both values are configured in GitHub Settings -> Environments -> `demo`.
+     - When configured: verifies `POST /api/auth/login` (stores HTTP-only cookie `sid`), `GET /api/auth/me` (confirms user session), and `POST /api/auth/logout` (revokes session and clears cookie with HTTP 204).
 6. **Deployment Summary**: Writes commit SHA, digest, rollback flag, service URL, and smoke test status to `$GITHUB_STEP_SUMMARY`.
 
 ### 12.2 Release Procedure (End-to-End)
@@ -331,21 +332,20 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
    git tag -a v0.1.2-lab5 -m "Release v0.1.2-lab5: automated WIF pipeline release"
    git push origin v0.1.2-lab5
    ```
-6. **Post-merge Release Evidence (verified on `main` via PR #49 / Run #6)**:
-   - Link to `Deploy demo` GitHub Actions workflow run on `main`: [Actions Run #46008184647](https://github.com/Worapol360/cpe334-group-project/actions/runs/46008184647) (Deploy job [#140537948321](https://github.com/Worapol360/cpe334-group-project/actions/runs/46008184647/job/140537948321)).
-   - Actions Step Summary artifact showing commit SHA `de6d5135183412346c59a10c90ff87383c77df21`, Artifact Registry image digest, rollback: false, service URL `https://s3ed50763-4d7hbszvwq-as.a.run.app`, and passing smoke test.
-   - Smoke test step log output showing all checks passing including authenticated login/logout:
+6. **Post-merge Release Evidence** _(pending — fill in after first pipeline run on `main`)_:
+   - [ ] Link to `Deploy demo` GitHub Actions workflow run on `main` (Actions Run URL)
+   - [ ] Actions Step Summary: commit SHA, Artifact Registry image digest, rollback: false, service URL, smoke status
+   - [ ] Smoke test step log output (must include `PASS login` and `PASS logout` — requires `SMOKE_EMAIL`/`SMOKE_PASSWORD` configured):
      ```text
-     PASS /api/health (version: de6d5135183412346c59a10c90ff87383c77df21)
+     PASS /api/health (version: <commit_sha>)
      PASS /api/ready
      PASS /
      PASS login and authenticated /api/auth/me
      PASS logout
      ```
-   - `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output:
-     `{"status":"ok","version":"de6d5135183412346c59a10c90ff87383c77df21"}` (verifies running commit SHA matches release).
-   - Cloud Run service `s3ed50763` serving 100% traffic from commit `de6d513`.
-   - Release tag: `v0.1.2-lab5`.
+   - [ ] `curl -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health` output with matching commit SHA
+   - [ ] `gcloud run services describe s3ed50763 ...` output confirming 100% traffic on latest revision
+   - [ ] Release tag: `v0.1.2-lab5` (already pushed).
 
 ### 12.3 How to Find the Running Commit
 
@@ -361,7 +361,7 @@ The automated CD pipeline triggers on every push to `main` (and via manual `work
 3. **Via GitHub Actions Step Summary**:
    Check the `Deploy demo` workflow run on GitHub under Actions -> Job `deploy` -> Summary (`$GITHUB_STEP_SUMMARY`).
 4. **Via Web UI Footer**:
-   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`), providing visible visual confirmation across all pages that pipeline deployment succeeded without relying on hardcoded fallback strings. (This visible indicator is documented for Lab 5 demonstration and will be cleaned up/removed after the demo).
+   The frontend footer (`client/src/App.jsx`) dynamically queries `/api/health` on mount and displays the active version/commit SHA (e.g. `FeedbackLoop • Lab 5 Release (<commit_sha>)`). If the health endpoint does not respond, no version is shown — the footer never displays a hardcoded fallback version.
 
 ### 12.4 Rollback Procedure
 
