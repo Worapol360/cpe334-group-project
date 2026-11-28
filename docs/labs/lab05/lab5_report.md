@@ -306,6 +306,9 @@ curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/ready
 - **Rollback:** GitHub Actions → **Deploy demo** → **Run workflow** → enter previous known-good commit SHA into `image_tag`. Tests, build, and migrations are skipped; Cloud Run shifts 100% traffic to the target digest image.
 - **Cost Control:** Cloud Run configured with `min-instances: 0` (scales to zero) / `max-instances: 3`. Cloud SQL on tier `db-f1-micro` (10 GB SSD), paused via `gcloud sql instances patch s3ed50763-pg --activation-policy=NEVER` when idle to stop compute billing while retaining persistent data.
 
+**Figure 11. R-09 & R-10: Complete GitHub Pull Request audit trail showing all Lab 5 PRs (#34–#41, #48–#49) labeled lab5, peer reviewed, and merged**  
+![Figure 11. All Lab 5 Pull Requests](images/github-lab5-prs.png)
+
 ---
 
 ## Definition of Done Audit Checklist
@@ -316,6 +319,9 @@ curl.exe -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/ready
 - [x] **Zero secrets in repository, images, logs, or report**: No passwords, tokens, or private keys committed
 - [x] **All Checks C-01 through C-06 fully verified and PASS**
 - [x] **Deployment documentation complete**: [`docs/labs/lab05/deployment.md`](https://github.com/Worapol360/cpe334-group-project/blob/main/docs/labs/lab05/deployment.md)
+
+**Figure 12. R-09 & R-10: Complete GitHub Issues audit trail showing all Lab 5 Issues (#25–#33) labeled lab5 and completed in Done state**  
+![Figure 12. All Lab 5 Issues](images/github-lab5-issues.png)
 
 ---
 

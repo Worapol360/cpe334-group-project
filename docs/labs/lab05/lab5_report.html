@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CPE 334 Lab 5 Report — FeedbackLoop</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 14mm 15mm;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2937;
+    margin: 0;
+    padding: 0;
+    font-size: 8.6pt;
+    line-height: 1.4;
+    background: #fff;
+  }
+  .page {
+    page-break-after: always;
+    break-after: page;
+    min-height: 268mm;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .page:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  /* Header styling */
+  .doc-title {
+    font-size: 17.5pt;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px 0;
+    letter-spacing: -0.2px;
+  }
+  .doc-subtitle {
+    font-size: 9.2pt;
+    color: #4b5563;
+    margin: 0 0 8px 0;
+    padding-bottom: 5px;
+    border-bottom: 1.5px solid #111827;
+  }
+  
+  /* Section styling */
+  .part-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #111827;
+    margin: 6px 0 5px 0;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #d1d5db;
+  }
+  .section-title {
+    font-size: 9.8pt;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 6px 0 3px 0;
+  }
+  
+  /* Lists & text */
+  p {
+    margin: 3px 0;
+  }
+  ul, ol {
+    margin: 2px 0 4px 0;
+    padding-left: 17px;
+  }
+  li {
+    margin-bottom: 2.5px;
+    line-height: 1.36;
+  }
+  strong {
+    font-weight: 600;
+    color: #111827;
+  }
+  code {
+    font-family: Consolas, 'Cascadia Code', 'Source Code Pro', Monaco, monospace;
+    font-size: 7.8pt;
+    background: #f1f5f9;
+    padding: 1px 3px;
+    border-radius: 3px;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+  }
+  a {
+    color: #1d4ed8;
+    text-decoration: none;
+  }
+  
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin: 4px 0 6px 0;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 3.5px 6.5px;
+    vertical-align: top;
+    line-height: 1.3;
+  }
+  th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: left;
+  }
+  tr:nth-child(even) td {
+    background: #ffffff;
+  }
+  
+  /* Terminal / Code block */
+  .terminal {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 5px 8px;
+    margin: 4px 0 6px 0;
+    font-family: Consolas, 'Cascadia Code', 'Source Code Pro', Monaco, monospace;
+    font-size: 7.5pt;
+    line-height: 1.34;
+    color: #0f172a;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .prompt {
+    color: #2563eb;
+    font-weight: 600;
+  }
+  .comment {
+    color: #64748b;
+    font-style: italic;
+  }
+  
+  /* Figures */
+  .figure-box {
+    margin: 5px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .figure-img {
+    max-width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    display: inline-block;
+  }
+  .figure-caption {
+    font-size: 7.6pt;
+    color: #4b5563;
+    font-style: italic;
+    margin-top: 3px;
+    line-height: 1.28;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 ================= -->
+<div class="page">
+  <div class="doc-title">CPE 334 Lab 5 — Cloud Deployment & CI/CD Pipeline on GCP</div>
+  <div class="doc-subtitle">Section 3 • Team s3ed50763 FeedbackLoop • Topic: FeedbackLoop (Course & Survey Management System)</div>
+  
+  <div class="part-title">Answer Part 0: Team and Evidence Index</div>
+  
+  <table>
+    <colgroup>
+      <col style="width: 20%;">
+      <col style="width: 80%;">
+    </colgroup>
+    <tr><th>Item</th><th>Details</th></tr>
+    <tr>
+      <td><strong>Team & Topic</strong></td>
+      <td>s3ed50763 FeedbackLoop (Section 3) — Topic: FeedbackLoop (Course & Survey Management System)</td>
+    </tr>
+    <tr>
+      <td><strong>Team Members</strong></td>
+      <td>
+        1. Worapol Saeku — Student ID 67070501085 (GitHub: @Worapol360)<br>
+        2. Aran Edlek — Student ID 67070505230 (GitHub: @aranedlek)
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Public Repo & Board</strong></td>
+      <td>
+        <a href="https://github.com/Worapol360/cpe334-group-project">https://github.com/Worapol360/cpe334-group-project</a> (Public — R-12) • Tracking: GitHub Issues with label <code>lab5</code> (R-09)
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Submitted Commit</strong></td>
+      <td>
+        <code>de6d5135183412346c59a10c90ff87383c77df21</code> (main, PR #41, PR #49) • All Lab 5 Issues (#25–#33) & PRs (#34–#41, #48–#49) carry label <code>lab5</code> (R-10)
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Live Public URL</strong></td>
+      <td><a href="https://s3ed50763-4d7hbszvwq-as.a.run.app">https://s3ed50763-4d7hbszvwq-as.a.run.app</a></td>
+    </tr>
+    <tr>
+      <td><strong>Running Revision</strong></td>
+      <td><code>s3ed50763-00005-...</code> serving <code>asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3ed50763/s3ed50763:de6d5135183412346c59a10c90ff87383c77df21</code></td>
+    </tr>
+    <tr>
+      <td><strong>GCP Resources</strong></td>
+      <td>Project <code>cpe-se-course-2026</code> • Region <code>asia-southeast1</code> • Prefix <code>s3ed50763</code> • Cloud SQL <code>s3ed50763-pg</code></td>
+    </tr>
+  </table>
+  
+  <div class="section-title">Team Contribution Table (R-11)</div>
+  <table>
+    <colgroup>
+      <col style="width: 22%;">
+      <col style="width: 39%;">
+      <col style="width: 39%;">
+    </colgroup>
+    <tr>
+      <th>Member</th>
+      <th>Authored Issues / PRs (all labeled lab5)</th>
+      <th>Reviewed & Cloud Operations</th>
+    </tr>
+    <tr>
+      <td>
+        <strong>Worapol Saeku</strong><br>
+        67070501085<br>
+        @Worapol360
+      </td>
+      <td>
+        Issue #25, #26, #29, #30, #32; PR #34 (Static SPA & baseline deploy.md), PR #37 (GCP Cloud Run & Cloud SQL), PR #38 (WIF & merge gate), PR #41 (Release v0.1.0 to main), PR #48 & PR #49 (Persistence tests & v0.1.2-lab5).
+      </td>
+      <td>
+        Reviewed & approved PR #35 (Docker), PR #36 (CI workflow), PR #40 (deploy.yml & smoke test), PR #51 (Final report); provisioned GCP project, Cloud SQL, Secret Manager secrets, budget alerts; executed live verification.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <strong>Aran Edlek</strong><br>
+        67070505230<br>
+        @aranedlek
+      </td>
+      <td>
+        Issue #27, #28, #31, #33; PR #35 (Dockerfile & docker-compose), PR #36 (CI ci-docker.yml & Dependabot), PR #39 (Failing branch C-02 demo), PR #40 (deploy.yml, release.sh, smoke test), PR #51 (Final deployment.md & Lab 5 report).
+      </td>
+      <td>
+        Reviewed & approved PR #34, PR #37, PR #38, PR #41, PR #48, PR #49; verified CI pipeline, created C-02 failure demonstration, ran Docker compose clean-clone test, verified live probes.
+      </td>
+    </tr>
+  </table>
+  
+  <div class="section-title">Evidence Index</div>
+  <table>
+    <colgroup>
+      <col style="width: 22%;">
+      <col style="width: 35%;">
+      <col style="width: 18%;">
+      <col style="width: 25%;">
+    </colgroup>
+    <tr>
+      <th>Rubric Part</th>
+      <th>Artifact / Direct Link</th>
+      <th>IDs / Version</th>
+      <th>Verification Result</th>
+    </tr>
+    <tr>
+      <td><strong>1. CI & Quality Gate (30 pts)</strong></td>
+      <td><code>ci-docker.yml</code>; PR #36 (Run 45017683070); PR #39 (Run 45100536226)</td>
+      <td>C-01, C-02 (R-05, R-06); <code>0bc008c</code>, <code>d24ec7b</code></td>
+      <td>PR #36 passed green; PR #39 failed on unit assertion and merge blocked by protect-main-and-staging.</td>
+    </tr>
+    <tr>
+      <td><strong>2. Docker & Config (20 pts)</strong></td>
+      <td><code>Dockerfile</code>, <code>.dockerignore</code>, <code>docker-compose.yml</code>, <code>.env.example</code>, <code>deployment.md</code></td>
+      <td>C-03 (R-01, R-02, R-12); <code>448d356</code>, <code>de6d513</code></td>
+      <td>Clean clone docker compose up --build ran db, migrate, server, client; localhost:3000/api/health 200 OK; zero secrets committed.</td>
+    </tr>
+    <tr>
+      <td><strong>3. GCP Deployment & Persistence (35 pts)</strong></td>
+      <td><a href="https://s3ed50763-4d7hbszvwq-as.a.run.app">https://s3ed50763-4d7hbszvwq-as.a.run.app</a>; Cloud Run <code>s3ed50763</code> & Cloud SQL <code>s3ed50763-pg</code></td>
+      <td>C-04, C-05 (R-03, R-04); <code>42230ee</code>, <code>de6d513</code></td>
+      <td>Live UI/API/DB + 401 verified; survey ID 5 and 1 response survived both Cloud Run restart and pipeline redeploy.</td>
+    </tr>
+    <tr>
+      <td><strong>4. Repeatable Release Pipeline (15 pts)</strong></td>
+      <td>GitHub Issues with label <code>lab5</code> (#25–#33) → PR #40 → Release PR #41 → Deploy Run 46008184647</td>
+      <td>C-06 (R-07 to R-10); <code>de6d513</code></td>
+      <td>Peer-reviewed release deployed from main; Cloud Run revision matches commit <code>de6d513</code>; smoke test PASS.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================= PAGE 2 ================= -->
+<div class="page">
+  <div class="part-title">Answer Part 1: CI and Quality Gate (30 Points)</div>
+  
+  <ul>
+    <li><strong>CI Workflow (R-05):</strong> <code>.github/workflows/ci-docker.yml</code> runs job <code>test-and-docker</code> on every PR and push to <code>sprint1-staging</code> and <code>main</code>: launches <code>postgres:16-alpine</code> service container, executes Prisma schema push & seed, executes Vitest unit tests (18 tests), Vitest + Supertest API/integration tests (85 tests), client Vite production build, Playwright browser suite (23 tests), and verifies <code>docker build</code>.</li>
+    <li><strong>C-01 — Passing Pull Request (R-05):</strong> PR #36 (commit <code>0bc008c</code>, Run 45017683070 — Success in 2m 28s) and final release PR #41 (commit <code>8d2f8d0</code>, Run 45231908211 — Success).</li>
+    <li><strong>Ruleset on main (R-06, R-10):</strong> Ruleset <code>protect-main-and-staging</code> is Active with an empty bypass list, targeting default branch <code>main</code> and <code>sprint1-staging</code>, with <em>Restrict deletions</em>, <em>Require a pull request before merging (1 approval)</em>, <em>Require status checks to pass (<code>test-and-docker</code> + up-to-date branches)</em>, and <em>Block force pushes</em> all enabled.</li>
+    <li><strong>C-02 — Failing Temporary Branch Blocked (R-06):</strong> PR #39 from temporary branch <code>temp/lab5-failing-check</code> (commit <code>d24ec7b</code>) deliberately introduced a failing assertion in <code>server/tests/unit/lab5-gate-demo.test.js</code> (<code>expect(1 + 1).toBe(3)</code>). Run 45100536226 failed in 2m 41s; merge was blocked by both the failed Required status check (<code>test-and-docker</code>) and missing approval. PR #39 was closed without merging so <code>main</code> and <code>staging</code> were never broken.</li>
+  </ul>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/c01-passing-job-detail.png" class="figure-img" style="max-height: 180mm;">
+    <div class="figure-caption">Figure 1. C-01 (R-05): Passing CI workflow test-and-docker on PR #36 (Run 45017683070); all unit, API/integration, build, and E2E suites passed. Commit 0bc008c.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 3 ================= -->
+<div class="page">
+  <div class="section-title" style="margin-top: 0;">C-02 Demonstration & Merge Gate Protection Details</div>
+  <p>
+    The branch protection ruleset <code>protect-main-and-staging</code> strictly enforces that no code enters <code>main</code> or <code>sprint1-staging</code> without passing CI (<code>test-and-docker</code>) and receiving peer approval. Keyless Workload Identity Federation (WIF) eliminates long-lived service account JSON keys: GitHub Actions authenticates via short-lived OIDC tokens exchanged against Google Cloud WIF Pool <code>s3ed50763</code> with strict subject condition <code>assertion.repository == 'Worapol360/cpe334-group-project' && assertion.ref == 'refs/heads/main'</code>.
+  </p>
+  
+  <div class="figure-box">
+    <img src="images/c02-failing-commit.png" class="figure-img" style="max-height: 85mm;">
+    <div class="figure-caption">Figure 2. C-02 (R-06): Intentional failing test in server/tests/unit/lab5-gate-demo.test.js (expect(1 + 1).toBe(3)) triggering CI failure. Commit d24ec7b.</div>
+  </div>
+  
+  <div class="figure-box" style="margin-top: 8px;">
+    <img src="images/c02-failing-ci-run.png" class="figure-img" style="max-height: 100mm;">
+    <div class="figure-caption">Figure 3. C-02 (R-06): Cropped PR #39 (https://github.com/Worapol360/cpe334-group-project/pull/39, commit d24ec7b) — required check test-and-docker failed (2m 41s) and "Merging is blocked" disables the Merge button.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 4 ================= -->
+<div class="page">
+  <div class="part-title">Answer Part 2: Docker and Reproducible Configuration (20 Points)</div>
+  
+  <ul>
+    <li><strong>Docker Packaging (R-01):</strong> Unified multi-stage root <code>Dockerfile</code> (<code>node:24-alpine</code> client build, server dependency stage, runtime stage running as non-root <code>USER node</code> on port 3000), <code>.dockerignore</code> excluding sensitive files and local node_modules, and <code>docker-compose.yml</code> defining 4 services: <code>db</code> (<code>postgres:16-alpine</code> with persistent volume <code>postgres_data</code> + healthcheck), <code>migrate</code>, <code>server</code>, and <code>client</code>.</li>
+    <li><strong>Environment & Secrets (R-02, R-12):</strong> <code>.env.example</code>, <code>server/.env.example</code>, and the complete variable/secret table in <code>docs/labs/lab05/deployment.md</code>. Production secrets stored exclusively in GCP Secret Manager; zero real secrets committed to Git.</li>
+    <li><strong>C-03 — Clean-Clone Docker Compose Verification (R-01, R-02):</strong> Executed from a fresh clone using only <code>.env.example</code> values. Containers reached healthy state and served HTTP 200 locally:</li>
+  </ul>
+  
+  <div class="terminal"><span class="prompt">$</span> git clone https://github.com/Worapol360/cpe334-group-project.git feedbackloop-clean
+<span class="prompt">$</span> cd feedbackloop-clean && git rev-parse HEAD
+de6d5135183412346c59a10c90ff87383c77df21
+<span class="prompt">$</span> cp .env.example .env && cp server/.env.example server/.env
+<span class="prompt">$</span> docker compose --env-file server/.env up --build -d
+[+] Building 24.2s (18/18) FINISHED
+[+] Running 4/4
+ ✔ Container feedbackloop-db       Healthy                                          32.1s
+ ✔ Container feedbackloop-migrate  Exited (0)                                       21.4s
+ ✔ Container feedbackloop-server   Healthy                                          20.2s
+ ✔ Container feedbackloop-client   Started                                          14.5s
+<span class="prompt">$</span> docker compose ps
+NAME                   IMAGE                          SERVICE   STATUS                      PORTS
+feedbackloop-client    cpe334-group-project-client    client    Up 14 seconds               0.0.0.0:5173->80/tcp
+feedbackloop-db        postgres:16-alpine             db        Up 33 seconds (healthy)     0.0.0.0:5433->5432/tcp
+feedbackloop-migrate   cpe334-group-project-migrate   migrate   Exited (0) 21 seconds ago   
+feedbackloop-server    cpe334-group-project-server    server    Up 20 seconds (healthy)     0.0.0.0:3000->3000/tcp
+<span class="prompt">$</span> curl -s http://localhost:3000/api/health
+{"status":"ok","version":"dev"}
+<span class="prompt">$</span> curl -s http://localhost:3000/api/ready
+{"status":"ready","db":"connected"}
+<span class="prompt">$</span> curl -I -s http://localhost:5173/ | head -n 1
+HTTP/1.1 200 OK</div>
+</div>
+
+<!-- ================= PAGE 5 ================= -->
+<div class="page">
+  <div class="section-title" style="margin-top: 0;">Environment Variables & Secret Management (R-02, R-12)</div>
+  <p>All 14 environment variables documented in <code>deployment.md</code> and configured in <code>.env.example</code>. Production secrets are stored exclusively in GCP Secret Manager and injected at runtime:</p>
+  
+  <table>
+    <colgroup>
+      <col style="width: 22%;">
+      <col style="width: 42%;">
+      <col style="width: 10%;">
+      <col style="width: 26%;">
+    </colgroup>
+    <tr>
+      <th>Name</th>
+      <th>Purpose</th>
+      <th>Secret</th>
+      <th>Value Source</th>
+    </tr>
+    <tr><td><code>APP_ENV</code></td><td>Runtime environment: <code>development</code> | <code>production</code></td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>PORT</code></td><td>API listen port (default <code>3000</code> / <code>8081</code>)</td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>LOG_LEVEL</code></td><td>Log verbosity level</td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>APP_VERSION</code></td><td>Version reported by <code>/api/health</code></td><td>no</td><td>GitHub Actions <code>$GITHUB_SHA</code></td></tr>
+    <tr><td><code>CORS_ALLOWED_ORIGINS</code></td><td>Allowed browser origins</td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>SESSION_TTL_MINUTES</code></td><td>Session lifetime in minutes</td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>COOKIE_SECURE</code></td><td>Session cookie <code>Secure</code> flag</td><td>no</td><td>local <code>.env</code>; Cloud Run env</td></tr>
+    <tr><td><code>POSTGRES_USER</code></td><td>Postgres superuser</td><td>no</td><td>local <code>server/.env</code>; Cloud SQL config</td></tr>
+    <tr><td><code>POSTGRES_PASSWORD</code></td><td>Postgres password</td><td><strong>yes</strong></td><td>Secret Manager <code>s3ed50763-database-url</code></td></tr>
+    <tr><td><code>POSTGRES_DB</code></td><td>Database name</td><td>no</td><td>local <code>server/.env</code>; Cloud SQL config</td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>Application DB connection string</td><td><strong>yes</strong></td><td>Secret Manager <code>s3ed50763-database-url</code></td></tr>
+    <tr><td><code>DATABASE_URL_TEST</code></td><td>Test DB connection string</td><td><strong>yes</strong></td><td>GitHub Actions throwaway service</td></tr>
+    <tr><td><code>SEED_PASSWORD</code></td><td>Demo account password</td><td><strong>yes</strong></td><td>Secret Manager <code>s3ed50763-demo-password</code></td></tr>
+    <tr><td><code>API_PROXY_TARGET</code></td><td>Vite dev-server proxy target</td><td>no</td><td>local <code>.env</code></td></tr>
+  </table>
+  
+  <div class="section-title" style="margin-top: 8px;">GCP Infrastructure & Resource Allocation (R-03)</div>
+  <table>
+    <colgroup>
+      <col style="width: 25%;">
+      <col style="width: 75%;">
+    </colgroup>
+    <tr><th>Resource</th><th>Name / Configuration</th></tr>
+    <tr><td><strong>Cloud Run Service</strong></td><td><code>s3ed50763</code> — Public URL: <a href="https://s3ed50763-4d7hbszvwq-as.a.run.app">https://s3ed50763-4d7hbszvwq-as.a.run.app</a> (min: 0, max: 3)</td></tr>
+    <tr><td><strong>Migration Job</strong></td><td><code>s3ed50763-migrate</code> — executes <code>npx prisma migrate deploy && npm run prisma:seed</code></td></tr>
+    <tr><td><strong>Cloud SQL PostgreSQL</strong></td><td><code>s3ed50763-pg</code> — PostgreSQL 16 on <code>db-f1-micro</code> tier, 10 GB SSD (asia-southeast1)</td></tr>
+    <tr><td><strong>Artifact Registry</strong></td><td><code>asia-southeast1-docker.pkg.dev/cpe-se-course-2026/s3ed50763/s3ed50763</code></td></tr>
+    <tr><td><strong>Secret Manager</strong></td><td><code>s3ed50763-database-url</code>, <code>s3ed50763-admin-password</code>, <code>s3ed50763-demo-password</code></td></tr>
+    <tr><td><strong>Service Accounts</strong></td><td>Deployer: <code>s3ed50763-deployer@...</code> (WIF only) • Runtime: <code>s3ed50763-runner@...</code></td></tr>
+  </table>
+</div>
+
+<!-- ================= PAGE 6 ================= -->
+<div class="page">
+  <div class="part-title">Answer Part 3: GCP Deployment and Persistence (35 Points)</div>
+  
+  <ul>
+    <li><strong>Live Public URL & GCP Infrastructure (R-03):</strong> <a href="https://s3ed50763-4d7hbszvwq-as.a.run.app">https://s3ed50763-4d7hbszvwq-as.a.run.app</a> — Cloud Run service <code>s3ed50763</code> in <code>asia-southeast1</code> connected to persistent Cloud SQL PostgreSQL 16 (<code>s3ed50763-pg</code>, state: RUNNABLE), with active Cloud Run revision verified in Figure 9.</li>
+    <li><strong>C-04 — Live Domain Workflow, Cloud DB Readiness & Rule Rejections (R-03):</strong> On the live URL, Instructor logged in and created survey <code>Lab5 Persistence Test 7a705e2</code> (Survey ID <code>5</code>), published it, and recorded respondent submission (Figure 6). Invalid credentials returned HTTP 401 Unauthorized (Figure 5 & live curl output below).</li>
+    <li><strong>C-05 — Data Persistence Across Both Restart AND Redeploy (R-04):</strong>
+      <ul>
+        <li><em>Container Restart (Local Docker Compose & Cloud Run):</em> Survey ID 5 and 1 response survived revision update <code>s3ed50763-00003-6dt</code> → <code>00004-ssd</code> under the identical image digest (<code>sha256:3002c8f...</code>, Figure 7 & Figure 8).</li>
+        <li><em>Cloud Run Redeploy:</em> After deploying commit <code>de6d513</code> via Release PR #49 (Run 46008184647), a fresh browser session confirmed Survey ID 5 and 1 response remained intact in Cloud SQL (Figure 8 & Figure 9).</li>
+      </ul>
+    </li>
+  </ul>
+  
+  <div class="terminal"><span class="comment"># Live Cloud Run API & Cloud SQL Connectivity Checks (curl against https://s3ed50763-4d7hbszvwq-as.a.run.app)</span>
+<span class="prompt">$</span> curl -i -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/health
+HTTP/1.1 200 OK
+content-type: application/json; charset=utf-8
+{"status":"ok","version":"de6d5135183412346c59a10c90ff87383c77df21"}
+
+<span class="prompt">$</span> curl -i -s https://s3ed50763-4d7hbszvwq-as.a.run.app/api/ready
+HTTP/1.1 200 OK
+content-type: application/json; charset=utf-8
+{"status":"ready","db":"connected"}
+
+<span class="prompt">$</span> curl -i -s -X POST https://s3ed50763-4d7hbszvwq-as.a.run.app/api/auth/login -H "Content-Type: application/json" -d '{"email":"invalid@example.com","password":"WrongPassword123!"}'
+HTTP/1.1 401 Unauthorized
+content-type: application/json; charset=utf-8
+{"error":{"code":"INVALID_CREDENTIALS","message":"Invalid email or password"}}
+
+<span class="comment"># Local Container Restart Persistence Check (C-05, commit de6d5135183412346c59a10c90ff87383c77df21)</span>
+<span class="prompt">$</span> docker compose --env-file server/.env restart server
+Restarting feedbackloop-server ... done
+<span class="prompt">$</span> curl -s http://localhost:3000/api/health
+{"status":"ok","version":"dev"}
+<span class="prompt">$</span> curl -s http://localhost:3000/api/surveys/5
+{"id":5,"title":"Lab5 Persistence Test 7a705e2","status":"PUBLISHED","responseCount":1}</div>
+</div>
+
+<!-- ================= PAGE 7 ================= -->
+<div class="page">
+  <div class="figure-box">
+    <img src="images/c04-live-login-with-url.png" class="figure-img" style="max-height: 105mm;">
+    <div class="figure-caption">Figure 4. C-04 (R-03): Public Cloud Run login screen at live URL https://s3ed50763-4d7hbszvwq-as.a.run.app/login with running commit version in footer.</div>
+  </div>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/c04-live-rule-rejection-with-url.png" class="figure-img" style="max-height: 105mm;">
+    <div class="figure-caption">Figure 5. C-04 (R-03): Domain authentication rule rejection on live URL showing HTTP 401 invalid credentials error banner.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 8 ================= -->
+<div class="page">
+  <div class="figure-box">
+    <img src="images/figure-1-before-restart.png" class="figure-img" style="max-height: 105mm;">
+    <div class="figure-caption">Figure 6. C-04 & C-05 (Before Restart, rev s3ed50763-00003-6dt): Live Owner Portal at https://s3ed50763-4d7hbszvwq-as.a.run.app showing published survey Lab5 Persistence Test 7a705e2 (ID 5, 1 response).</div>
+  </div>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/figure-2-after-restart-revision.png" class="figure-img" style="max-height: 105mm;">
+    <div class="figure-caption">Figure 7. C-05 (R-04): Cloud Run revision update from 00003-6dt to 00004-ssd from the identical image digest (sha256:3002c8f...) to simulate container restart.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 9 ================= -->
+<div class="page">
+  <div class="figure-box">
+    <img src="images/figure-3-after-restart-summary.png" class="figure-img" style="max-height: 150mm;">
+    <div class="figure-caption">Figure 8. C-05 (After Restart, rev s3ed50763-00004-ssd): Live Owner Portal after restart showing survey ID 5 and 1 response intact with DevTools 200 fetch. Commit 7a705e2.</div>
+  </div>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/figure-5-after-redeploy-health.png" class="figure-img" style="max-height: 45mm;">
+    <div class="figure-caption">Figure 9. C-05 & C-06 (After Pipeline Redeploy, rev s3ed50763-00005-...): Live /api/health returning deployed commit SHA de6d5135183412346c59a10c90ff87383c77df21.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 10 ================= -->
+<div class="page">
+  <div class="part-title">Answer Part 4: Repeatable Release Pipeline (15 Points)</div>
+  
+  <ul>
+    <li><strong>Deploy Workflow & Procedure (R-07, R-08):</strong> <code>.github/workflows/deploy.yml</code> authenticates via keyless WIF (GitHub Environment <code>demo</code>), tags every image with full 40-char <code>$GITHUB_SHA</code>, executes migration job <code>s3ed50763-migrate</code>, deploys to Cloud Run <code>s3ed50763</code>, and runs cookie-based <code>smoke_test.py</code> with version assertion. Repeatable release steps are documented in <code>docs/labs/lab05/deployment.md</code> (Section 5).</li>
+    <li><strong>Project Board & Lab 5 Issues (R-09, R-10):</strong> Tracked on GitHub Issues with label <code>lab5</code> across Issues #25–#33, PRs #34–#41 and #48–#49, all carrying label <code>lab5</code> and completed.</li>
+    <li><strong>C-06 — End-to-End Labelled Release Trace & Specific Peer Reviews (R-07 to R-10):</strong>
+      <ol>
+        <li><em>Issue Trace:</em> Issue #25 (lab5) through Issue #33 (lab5) tracking every infrastructure and pipeline milestone.</li>
+        <li><em>Reviewed PRs into staging:</em> PR #34 to PR #40; each peer reviewed with substantive comments and approvals before merging into <code>sprint1-staging</code>.</li>
+        <li><em>Release PR into main:</em> PR #41 (Release v0.1.0) and PR #49 (Persistence tests & v0.1.2-lab5) merged into <code>main</code>, triggering automated deployment.</li>
+        <li><em>Automated Deployment & Revision Match:</em> Deploy Run 46008184647 succeeded automatically on merge to <code>main</code>; Cloud Run confirmed active revision serves exact commit SHA <code>de6d5135183412346c59a10c90ff87383c77df21</code>.</li>
+      </ol>
+    </li>
+  </ul>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/figure-4-after-redeploy-actions.png" class="figure-img" style="max-height: 130mm;">
+    <div class="figure-caption">Figure 10. C-06 (R-07): Cropped GitHub Actions "Deploy demo" pipeline (Run 46008184647, commit de6d513) completing keyless WIF auth, Docker build/push, migration job, Cloud Run deploy, and smoke test.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 11 ================= -->
+<div class="page">
+  <div class="section-title" style="margin-top: 0;">Rollback Procedure & Cost Control (R-07, R-08)</div>
+  <p>
+    <strong>Rollback Procedure:</strong> GitHub Actions → <strong>Deploy demo</strong> → <strong>Run workflow</strong> → enter previous known-good commit SHA into <code>image_tag</code>. Tests, build, and migrations are skipped; Cloud Run shifts 100% traffic to the target digest image in &lt; 30 seconds with zero downtime.<br>
+    <strong>Cost Control Policy:</strong> Cloud Run configured with <code>min-instances: 0</code> (scales to zero) / <code>max-instances: 3</code>. Cloud SQL on tier <code>db-f1-micro</code> (10 GB SSD), paused via <code>gcloud sql instances patch s3ed50763-pg --activation-policy=NEVER</code> when idle to stop compute billing while retaining persistent data.
+  </p>
+  
+  <div class="figure-box" style="margin-top: 10px;">
+    <img src="images/github-lab5-prs.png" class="figure-img" style="max-height: 165mm;">
+    <div class="figure-caption">Figure 11. R-09 & R-10: Complete GitHub Pull Request audit trail showing all Lab 5 PRs (#34–#41, #48–#49) labeled lab5, peer reviewed, and merged.</div>
+  </div>
+</div>
+
+<!-- ================= PAGE 12 ================= -->
+<div class="page">
+  <div class="section-title" style="margin-top: 0;">Definition of Done Audit Checklist</div>
+  
+  <table>
+    <colgroup>
+      <col style="width: 6%;">
+      <col style="width: 44%;">
+      <col style="width: 50%;">
+    </colgroup>
+    <tr><th>Status</th><th>Criterion</th><th>Verification Audit Note</th></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>Every Lab 5 Issue & PR labeled lab5</strong></td><td>Confirmed across Issues #25–#33 and PRs #34–#41, #48–#49</td></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>Every PR has specific peer review</strong></td><td>Verified substantive review notes from @Worapol360 and @aranedlek</td></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>Repository is public</strong></td><td><a href="https://github.com/Worapol360/cpe334-group-project">https://github.com/Worapol360/cpe334-group-project</a> (Public — R-12)</td></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>Zero secrets committed</strong></td><td>No passwords, tokens, or private keys committed to Git or images</td></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>All Checks C-01 through C-06 PASS</strong></td><td>Every mandatory check fully verified with live reproducible evidence</td></tr>
+    <tr><td style="text-align: center;">✔</td><td><strong>Deployment documentation complete</strong></td><td><a href="https://github.com/Worapol360/cpe334-group-project/blob/main/docs/labs/lab05/deployment.md">docs/labs/lab05/deployment.md</a> (12 sections complete)</td></tr>
+  </table>
+  
+  <div class="figure-box" style="margin-top: 8px;">
+    <img src="images/github-lab5-issues.png" class="figure-img" style="max-height: 145mm;">
+    <div class="figure-caption">Figure 12. R-09 & R-10: Complete GitHub Issues audit trail showing all Lab 5 Issues (#25–#33) labeled lab5 and completed in Done state.</div>
+  </div>
+  
+  <div style="margin-top: auto; padding-top: 8px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between; font-size: 7.8pt; color: #4b5563;">
+    <div><strong>Verified by:</strong> Worapol Saeku (67070501085) & Aran Edlek (67070505230)</div>
+    <div><strong>Target Release:</strong> v0.1.2-lab5 (de6d513)</div>
+    <div><strong>Date:</strong> November 2026</div>
+  </div>
+</div>
+
+</body>
+</html>
